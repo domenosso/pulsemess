@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#ffffff" id="theme-color-meta">
+    <title>Nexus Cloud</title>
+
+    <!-- Google Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+    <style>
+        /* === ПЕРЕМЕННЫЕ === */
+        :root {
+            --bg-main: #f3f4f6; --bg-panel: #ffffff; --bg-chat: #efeae2; --bg-input: #f3f4f6; --bg-hover: #f9fafb;
+            --text-main: #111827; --text-muted: #6b7280; --accent: #3b82f6; --accent-hover: #2563eb;
+            --msg-out: #3b82f6; --msg-out-text: #ffffff; --msg-in: #ffffff; --msg-in-text: #111827;
+            --border: #e5e7eb; --glass-bg: rgba(255, 255, 255, 0.85); --nav-bg: rgba(255, 255, 255, 0.95);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05); --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1);
+            --tick-read: #60a5fa; --tick-sent: #9ca3af;
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #0f172a; --bg-panel: #1e293b; --bg-chat: #0b1120; --bg-input: #334155; --bg-hover: #334155;
+            --text-main: #f8fafc; --text-muted: #94a3b8; --accent: #60a5fa; --accent-hover: #3b82f6;
+            --msg-out: #60a5fa; --msg-out-text: #0f172a; --msg-in: #1e293b; --msg-in-text: #f8fafc;
+            --border: #334155; --glass-bg: rgba(30, 41, 59, 0.85); --nav-bg: rgba(30, 41, 59, 0.95);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.5); --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.5);
+            --tick-read: #3b82f6; --tick-sent: #64748b;
+        }
+
+        /* === БАЗА === */
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; justify-content: center; user-select: none; transition: background-color 0.3s; }
+        input, button, textarea { outline: none; border: none; color: inherit; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; opacity: 0.5; }
+        .icon { font-family: 'Material Symbols Rounded'; font-size: 24px; display: inline-block; user-select: none; }
+        .hidden { display: none !important; }
+
+        /* === UI ЭЛЕМЕНТЫ === */
+        .btn { background: var(--accent); color: white; padding: 14px 24px; border-radius: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4); }
+        .btn:active { transform: scale(0.96); }
+        .btn:hover { background: var(--accent-hover); }
+        .btn-icon { color: var(--text-muted); padding: 10px; border-radius: 50%; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .btn-icon:hover { background: var(--bg-hover); color: var(--text-main); }
+        
+        /* Исправленные кнопки профиля */
+        .btn-outline { background: transparent; border: 2px solid var(--accent); color: var(--accent) !important; box-shadow: none; }
+        .btn-outline:hover { background: rgba(59, 130, 246, 0.1); }
+        .btn-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444 !important; box-shadow: none; border: 2px solid transparent; }
+        .btn-danger:hover { background: #ef4444; color: white !important; }
+        [data-theme="dark"] .btn:not(.btn-outline):not(.btn-danger) { color: var(--msg-out-text); }
+
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+        
+        .avatar { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; color: white; background-size: cover; background-position: center; box-shadow: var(--shadow-sm); flex-shrink: 0; }
+        .avatar-upload-circle { width: 100px; height: 100px; border-radius: 50%; background: var(--bg-input); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed var(--border); transition: 0.2s; color: var(--text-muted); background-size: cover; background-position: center; position: relative; overflow: hidden; margin: 0 auto 20px auto; }
+        
+        /* === ВХОД И РЕГИСТРАЦИЯ === */
+        #auth-screen { width: 100%; height: 100%; background: var(--bg-main); position: absolute; z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .auth-card { background: var(--bg-panel); padding: 40px; border-radius: 32px; box-shadow: var(--shadow-lg); width: 90%; max-width: 400px; border: 1px solid var(--border); }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
+        .input-group input { width: 100%; padding: 16px; background: var(--bg-input); border-radius: 16px; font-size: 16px; color: var(--text-main); }
+        
+        .auth-toggle-link { text-align: center; font-size: 14px; font-weight: 600; color: var(--accent); cursor: pointer; margin-top: 16px; transition: 0.2s; }
+        .auth-toggle-link:hover { opacity: 0.8; text-decoration: underline; }
+
+        /* === ГЛАВНОЕ ОКНО === */
+        #app-screen { width: 100%; max-width: 1400px; height: 100%; display: flex; background: var(--bg-panel); box-shadow: var(--shadow-lg); overflow: hidden; position: relative; }
+        #main-nav { background: var(--nav-bg); backdrop-filter: blur(10px); z-index: 40; border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; gap: 20px; width: 80px; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); cursor: pointer; padding: 12px; border-radius: 16px; font-size: 11px; font-weight: 500; }
+        .nav-item.active { color: var(--accent); background: rgba(59, 130, 246, 0.1); }
+
+        #views-container { flex: 1; max-width: 400px; border-right: 1px solid var(--border); background: var(--bg-panel); display: flex; flex-direction: column; position: relative; }
+        .view-section { width: 100%; height: 100%; display: none; flex-direction: column; position: absolute; top: 0; left: 0; background: var(--bg-panel); }
+        .view-section.active { display: flex; animation: popIn 0.2s ease-out; }
+        
+        .view-header { padding: 20px; border-bottom: 1px solid var(--border); font-size: 24px; font-weight: 700; }
+        .view-content { flex: 1; overflow-y: auto; padding: 10px; }
+        
+        .search-bar { background: var(--bg-input); padding: 12px 16px; border-radius: 16px; display: flex; align-items: center; gap: 10px; margin: 10px; }
+        .search-bar input { background: transparent; width: 100%; font-size: 15px; }
+
+        .chat-item { display: flex; align-items: center; padding: 12px; gap: 16px; border-radius: 16px; cursor: pointer; margin-bottom: 4px; }
+        .chat-item:hover { background: var(--bg-hover); }
+        .chat-item.active { background: var(--accent); color: var(--msg-out-text); }
+        .chat-info { flex: 1; overflow: hidden; }
+        .chat-name { font-weight: 600; font-size: 16px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-status { font-size: 13px; color: var(--text-muted); }
+        .chat-item.active .chat-status { color: rgba(255,255,255,0.8); }
+        .online-dot { width: 10px; height: 10px; background: #10b981; border-radius: 50%; display: inline-block; margin-left: 6px; }
+
+        .settings-item { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: var(--bg-input); border-radius: 16px; margin-bottom: 10px; cursor: pointer; }
+        
+        /* === ЧАТ === */
+        #chat-area { flex: 1; display: flex; flex-direction: column; background-color: var(--bg-chat); position: relative; }
+        .chat-header { padding: 12px 20px; background: var(--glass-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; z-index: 5; }
+        .back-btn { display: none; }
+        
+        .messages-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; z-index: 1; }
+        .message-row { display: flex; width: 100%; margin-bottom: 4px; animation: popIn 0.2s; }
+        .message-row.outgoing { justify-content: flex-end; }
+        .message-row.incoming { justify-content: flex-start; }
+        
+        .message { max-width: 75%; padding: 10px 14px; border-radius: 18px; position: relative; cursor: pointer; word-wrap: break-word; user-select: text; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
+        .message.incoming { background: var(--msg-in); color: var(--msg-in-text); border-bottom-left-radius: 4px; }
+        .message.outgoing { background: var(--msg-out); color: var(--msg-out-text); border-bottom-right-radius: 4px; }
+        
+        .msg-media { max-width: 100%; border-radius: 12px; cursor: pointer; margin-bottom: 4px; object-fit: cover; max-height: 300px; }
+        .msg-doc { display: flex; align-items: center; gap: 12px; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 12px; cursor: pointer; }
+        .msg-audio { margin-top: 4px; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.05); padding: 6px 12px; border-radius: 20px; }
+        .msg-audio audio { height: 36px; width: 220px; outline: none; border-radius: 18px; }
+        
+        .msg-meta { display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 11px; margin-top: 6px; opacity: 0.8; float: right; margin-left: 12px; }
+        .tick-icon { font-size: 16px !important; }
+        .tick-icon.sent { color: var(--tick-sent); }
+        .tick-icon.read { color: var(--tick-read); }
+        .message.outgoing .tick-icon.read { color: #ffffff; }
+
+        .chat-input-area { padding: 12px 20px; display: flex; align-items: flex-end; gap: 12px; background: var(--glass-bg); backdrop-filter: blur(15px); border-top: 1px solid var(--border); }
+        .input-box { flex: 1; display: flex; align-items: center; background: var(--bg-input); border-radius: 24px; padding: 8px 16px; }
+        .input-box textarea { width: 100%; background: transparent; resize: none; font-size: 15px; padding: 6px 0; max-height: 120px; min-height: 24px; }
+        .circle-btn { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .btn-send { background: var(--accent); color: white; }
+        .btn-mic { background: #10b981; color: white; }
+
+        /* ОВЕРЛЕИ */
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; backdrop-filter: blur(4px); }
+        .overlay.active { opacity: 1; pointer-events: auto; }
+        .viewer-content { max-width: 90%; max-height: 80vh; display: flex; flex-direction: column; align-items: center; gap: 20px; color: white; }
+        .viewer-content img, .viewer-content video { max-width: 100%; max-height: 70vh; border-radius: 12px; }
+        .bottom-sheet { position: absolute; bottom: -100%; left: 0; width: 100%; background: var(--bg-panel); border-radius: 24px 24px 0 0; padding: 24px 16px; transition: bottom 0.3s; z-index: 201; }
+        .bottom-sheet.active { bottom: 0; }
+        .menu-item { display: flex; align-items: center; gap: 16px; padding: 14px 16px; font-size: 16px; cursor: pointer; border-radius: 16px; }
+        .menu-item:hover { background: var(--bg-input); }
+
+        /* Лоадер */
+        #loader-overlay { background: rgba(0,0,0,0.8); flex-direction: column; color: white; font-weight: 600; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            #main-nav { flex-direction: row; width: 100%; height: auto; position: absolute; bottom: 0; left: 0; justify-content: space-around; padding: 10px 0; padding-bottom: calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); border-right: none; }
+            .nav-item { flex: 1; padding: 8px; }
+            #views-container { max-width: 100%; height: calc(100% - 70px - env(safe-area-inset-bottom)); border-right: none; }
+            #chat-area { position: absolute; top: 0; left: 100%; width: 100%; height: 100%; transition: transform 0.35s; z-index: 50; }
+            #chat-area.active { transform: translateX(-100%); }
+            .back-btn { display: flex; margin-left: -10px; }
+        }
+    </style>
+</head>
+<body data-theme="light">
+
+    <!-- Лоадер -->
+    <div id="loader-overlay" class="overlay">
+        <div class="spinner"></div>
+        <div id="loader-text">Загрузка...</div>
+    </div>
+
+    <!-- Авторизация -->
+    <div id="auth-screen">
+        <div class="auth-card">
+            <h1 id="auth-title" style="text-align: center; margin-bottom: 20px;">Регистрация</h1>
+            
+            <div class="avatar-upload-circle" id="auth-avatar-preview" onclick="document.getElementById('auth-avatar-input').click()">
+                <span class="icon" style="font-size: 32px;">add_a_photo</span>
+                <span class="overlay-text">Аватар</span>
+            </div>
+            <input type="file" id="auth-avatar-input" hidden accept="image/*" onchange="window.handleAvatarSelect(event, 'auth-avatar-preview')">
+            
+            <div class="input-group">
+                <label>Логин (Ваше имя)</label>
+                <input type="text" id="auth-name" placeholder="Введите логин..." autocomplete="off">
+            </div>
+
+            <div class="input-group">
+                <label>Пароль</label>
+                <input type="password" id="auth-pass" placeholder="Придумайте пароль..." autocomplete="off">
+            </div>
+
+            <button class="btn" id="auth-btn" style="width: 100%; margin-bottom: 8px;" onclick="window.submitAuth()">Зарегистрироваться</button>
+            
+            <div class="auth-toggle-link" id="auth-toggle" onclick="window.toggleAuthMode()">
+                Уже есть аккаунт? Войти
+            </div>
+        </div>
+    </div>
+
+    <!-- Основное приложение -->
+    <div id="app-screen" class="hidden">
+        <nav id="main-nav">
+            <div class="nav-item active" onclick="window.switchView('chats', this)"><span class="icon">chat_bubble</span><span>Чаты</span></div>
+            <div class="nav-item" onclick="window.switchView('settings', this)"><span class="icon">settings</span><span>Настройки</span></div>
+            <div class="nav-item" onclick="window.switchView('profile', this)"><span class="icon">account_circle</span><span>Профиль</span></div>
+        </nav>
+
+        <div id="views-container">
+            <!-- Чаты -->
+            <div id="view-chats" class="view-section active">
+                <div class="view-header">Чаты</div>
+                <div class="search-bar"><span class="icon" style="color: var(--text-muted);">search</span><input type="text" id="search-input" placeholder="Поиск людей..." oninput="window.renderUsersList()"></div>
+                <div id="chat-list" class="view-content"></div>
+            </div>
+
+            <!-- Настройки -->
+            <div id="view-settings" class="view-section">
+                <div class="view-header">Настройки</div>
+                <div class="view-content">
+                    <div class="settings-item" onclick="window.toggleTheme()">
+                        <div style="display:flex; gap:12px;"><span class="icon">dark_mode</span><span>Тёмная тема</span></div>
+                        <span class="icon" id="theme-indicator" style="color: var(--text-muted);">toggle_off</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Профиль -->
+            <div id="view-profile" class="view-section">
+                <div class="view-header">Профиль</div>
+                <div class="view-content" style="text-align:center; padding-top:20px;">
+                    <div class="avatar-upload-circle" id="profile-avatar-preview" onclick="document.getElementById('profile-avatar-input').click()" style="width: 120px; height: 120px;">
+                        <span class="icon" style="font-size: 40px; opacity: 0;">add_a_photo</span>
+                    </div>
+                    <input type="file" id="profile-avatar-input" hidden accept="image/*" onchange="window.handleAvatarSelect(event, 'profile-avatar-preview', true)">
+                    
+                    <h2 id="profile-name-display" style="margin-bottom: 20px;">Имя</h2>
+                    
+                    <div class="input-group" style="text-align: left;">
+                        <label>Изменить имя</label>
+                        <input type="text" id="profile-name-input">
+                    </div>
+                    <button class="btn btn-outline" style="width: 100%; margin-bottom: 16px;" onclick="window.saveProfile()">Сохранить изменения</button>
+                    <button class="btn btn-danger" style="width: 100%;" onclick="window.logout()">Выйти из аккаунта</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Чат -->
+        <main id="chat-area">
+            <div id="chat-empty" style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--text-muted);">
+                <span class="icon" style="font-size: 80px; opacity: 0.3;">forum</span>
+                <p>Выберите собеседника</p>
+            </div>
+
+            <div id="chat-active" class="hidden" style="height: 100%; display: flex; flex-direction: column;">
+                <div class="chat-header">
+                    <span class="icon btn-icon back-btn" onclick="window.closeChatMobile()">arrow_back_ios_new</span>
+                    <div id="active-chat-avatar" class="avatar" style="width: 42px; height: 42px;"></div>
+                    <div style="flex:1;">
+                        <div id="active-chat-name" style="font-weight: 600; font-size: 16px;"></div>
+                        <div id="active-chat-status" style="font-size: 13px; color: var(--text-muted);"></div>
+                    </div>
+                </div>
+
+                <div id="messages-container" class="messages-container"></div>
+
+                <div class="chat-input-area">
+                    <span class="icon btn-icon" onclick="document.getElementById('file-input').click()">attach_file</span>
+                    <input type="file" id="file-input" class="hidden" onchange="window.handleFileUpload(event)" accept="image/*, video/*, .doc, .docx, .pdf, .txt">
+                    
+                    <div class="input-box">
+                        <textarea id="message-input" rows="1" placeholder="Сообщение..." oninput="window.autoResize(this)" onkeydown="window.handleEnter(event)"></textarea>
+                    </div>
+                    
+                    <div id="btn-mic" class="circle-btn btn-mic" onmousedown="window.startVoice()" onmouseup="window.stopVoice()" ontouchstart="window.startVoice()" ontouchend="window.stopVoice()">
+                        <span class="icon">mic</span>
+                    </div>
+                    <div id="btn-send" class="circle-btn btn-send hidden" onclick="window.sendTextMessage()">
+                        <span class="icon">send</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Модалки -->
+    <div id="viewer-overlay" class="overlay" onclick="window.closeViewer()">
+        <div class="viewer-content" onclick="event.stopPropagation()">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; padding: 20px; display: flex; justify-content: flex-end;">
+                <span class="icon btn-icon" style="color: white;" onclick="window.closeViewer()">close</span>
+            </div>
+            <div id="viewer-body"></div>
+            <a id="viewer-download" class="btn" style="text-decoration: none;" download><span class="icon">download</span> Скачать</a>
+        </div>
+    </div>
+
+    <div id="bottom-sheet-overlay" class="overlay" onclick="window.closeBottomSheet()">
+        <div id="bottom-sheet" class="bottom-sheet" onclick="event.stopPropagation()">
+            <div class="sheet-drag"></div>
+            <div class="menu-item" onclick="window.copyTextMobile()"><span class="icon">content_copy</span> Копировать</div>
+            <div id="bs-delete" class="menu-item" style="color: #ef4444;" onclick="window.execAction('delete')"><span class="icon">delete</span> Удалить сообщение</div>
+        </div>
+    </div>
+
+    <!-- ЛОГИКА APP (Firebase + GitHub) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getDatabase, ref, set, get, push, onValue, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        // === CONFIGS ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyBp3rh42vhASN-6eK6Tm7zmUXuEwG3pfHY",
+            authDomain: "anonmessage-cfd86.firebaseapp.com",
+            databaseURL: "https://anonmessage-cfd86-default-rtdb.firebaseio.com",
+            projectId: "anonmessage-cfd86",
+            storageBucket: "anonmessage-cfd86.firebasestorage.app",
+            messagingSenderId: "543836567582",
+            appId: "1:543836567582:web:9df559a58cd9f385c8960f",
+            measurementId: "G-6TENT6S5JZ"
+        };
+        const GH_TOKEN = "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";
+        const GH_REPO = "domenosso/nano-mess-cloud";
+
+        // === INIT FIREBASE ===
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // === GLOBALS ===
+        let currentUser = null;
+        let allUsers = {};
+        let activeChatId = null;
+        let activeUserId = null;
+        let targetMsgId = null; 
+        let tempAvatarBase64 = null; 
+        let isLoginMode = false; // Флаг режима Вход/Регистрация
+
+        // === GITHUB UPLOAD ===
+        async function uploadToGitHub(base64Data, filename) {
+            document.getElementById('loader-overlay').classList.add('active');
+            try {
+                const safeName = Date.now() + '_' + filename.replace(/[^a-zA-Z0-9.]/g, '_');
+                const url = `https://api.github.com/repos/${GH_REPO}/contents/uploads/${safeName}`;
+                
+                const response = await fetch(url, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${GH_TOKEN}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: `Upload ${safeName}`, content: base64Data })
+                });
+                
+                if(!response.ok) throw new Error('GitHub API Error');
+                const data = await response.json();
+                return data.content.download_url;
+            } catch (e) {
+                alert('Ошибка загрузки файла в облако');
+                console.error(e);
+                return null;
+            } finally {
+                document.getElementById('loader-overlay').classList.remove('active');
+            }
+        }
+
+        // === БАЗОВЫЕ ФУНКЦИИ И АВТОРИЗАЦИЯ ===
+        window.onload = () => {
+            initTheme();
+            const stored = localStorage.getItem('nexus_user');
+            if (stored) {
+                currentUser = JSON.parse(stored);
+                showApp();
+                setupPresence();
+            }
+            setupInputWatch();
+        };
+
+        window.toggleAuthMode = () => {
+            isLoginMode = !isLoginMode;
+            document.getElementById('auth-title').innerText = isLoginMode ? 'Вход' : 'Регистрация';
+            document.getElementById('auth-btn').innerText = isLoginMode ? 'Войти' : 'Зарегистрироваться';
+            document.getElementById('auth-toggle').innerText = isLoginMode ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти';
+            document.getElementById('auth-avatar-preview').style.display = isLoginMode ? 'none' : 'flex';
+        };
+
+        window.submitAuth = async () => {
+            const name = document.getElementById('auth-name').value.trim();
+            const pass = document.getElementById('auth-pass').value.trim();
+            
+            if(!name || !pass) return alert('Введите логин и пароль');
+
+            document.getElementById('loader-overlay').classList.add('active');
+            document.getElementById('loader-text').innerText = 'Проверка...';
+
+            try {
+                // Ищем пользователя в базе
+                const snapshot = await get(ref(db, 'users'));
+                const users = snapshot.val() || {};
+                
+                // Поиск по имени без учета регистра
+                const existingUserKey = Object.keys(users).find(key => users[key].name && users[key].name.toLowerCase() === name.toLowerCase());
+                
+                if (isLoginMode) {
+                    if (!existingUserKey) {
+                        alert('Пользователь не найден!');
+                        return;
+                    }
+                    if (users[existingUserKey].password !== pass) {
+                        alert('Неверный пароль!');
+                        return;
+                    }
+                    
+                    currentUser = users[existingUserKey];
+                    // Не сохраняем пароль в LocalStorage в открытом виде для безопасности сессии
+                    localStorage.setItem('nexus_user', JSON.stringify({id: currentUser.id, name: currentUser.name, avatarUrl: currentUser.avatarUrl, color: currentUser.color}));
+                    
+                } else {
+                    // Регистрация
+                    if (existingUserKey) {
+                        alert('Логин уже занят! Выберите другое имя или войдите.');
+                        return;
+                    }
+                    
+                    let avatarUrl = null;
+                    if (tempAvatarBase64) {
+                        const pureBase64 = tempAvatarBase64.split(',')[1];
+                        avatarUrl = await uploadToGitHub(pureBase64, 'avatar.jpg');
+                    }
+
+                    const userId = 'user_' + Date.now();
+                    currentUser = { 
+                        id: userId, 
+                        name: name, 
+                        password: pass, // Для прототипа сохраняем так. В реальном проекте - хэшировать.
+                        avatarUrl: avatarUrl, 
+                        color: '#3b82f6', 
+                        isOnline: true 
+                    };
+                    
+                    await set(ref(db, 'users/' + userId), currentUser);
+                    localStorage.setItem('nexus_user', JSON.stringify({id: currentUser.id, name: currentUser.name, avatarUrl: currentUser.avatarUrl, color: currentUser.color}));
+                }
+                
+                showApp();
+                setupPresence();
+
+            } catch (e) {
+                alert('Ошибка связи с сервером');
+            } finally {
+                document.getElementById('loader-overlay').classList.remove('active');
+                document.getElementById('loader-text').innerText = 'Загрузка...';
+            }
+        };
+
+        function setupPresence() {
+            const myStatusRef = ref(db, 'users/' + currentUser.id + '/isOnline');
+            set(myStatusRef, true);
+            onDisconnect(myStatusRef).set(false);
+        }
+
+        function showApp() {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            
+            document.getElementById('profile-name-display').innerText = currentUser.name;
+            document.getElementById('profile-name-input').value = currentUser.name;
+            renderAvatar(document.getElementById('profile-avatar-preview'), currentUser);
+
+            onValue(ref(db, 'users'), snapshot => {
+                allUsers = snapshot.val() || {};
+                window.renderUsersList();
+                if (activeUserId && allUsers[activeUserId]) {
+                    const statusText = allUsers[activeUserId].isOnline ? '<span class="online-dot"></span> В сети' : 'Был(а) недавно';
+                    document.getElementById('active-chat-status').innerHTML = statusText;
+                }
+            });
+        }
+
+        window.logout = () => {
+            if(currentUser) set(ref(db, 'users/' + currentUser.id + '/isOnline'), false);
+            localStorage.removeItem('nexus_user');
+            location.reload();
+        };
+
+        window.saveProfile = async () => {
+            const newName = document.getElementById('profile-name-input').value.trim();
+            if(newName) currentUser.name = newName;
+            
+            if(tempAvatarBase64) {
+                const pureBase64 = tempAvatarBase64.split(',')[1];
+                const avatarUrl = await uploadToGitHub(pureBase64, 'avatar.jpg');
+                if(avatarUrl) currentUser.avatarUrl = avatarUrl;
+            }
+            
+            update(ref(db, 'users/' + currentUser.id), { name: currentUser.name, avatarUrl: currentUser.avatarUrl || null });
+            localStorage.setItem('nexus_user', JSON.stringify(currentUser));
+            document.getElementById('profile-name-display').innerText = currentUser.name;
+            alert('Профиль обновлен!');
+            tempAvatarBase64 = null;
+        };
+
+        window.handleAvatarSelect = (event, previewId) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    const MAX = 200;
+                    if(w > h) { if(w > MAX) { h *= MAX/w; w = MAX; } } 
+                    else { if(h > MAX) { w *= MAX/h; h = MAX; } }
+                    canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    tempAvatarBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                    document.getElementById(previewId).style.backgroundImage = `url(${tempAvatarBase64})`;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        function renderAvatar(el, user) {
+            if (user.avatarUrl) {
+                el.style.backgroundImage = `url(${user.avatarUrl})`;
+                el.innerText = '';
+                el.style.backgroundColor = 'transparent';
+            } else {
+                el.style.backgroundImage = 'none';
+                el.style.backgroundColor = user.color || '#3b82f6';
+                el.innerText = user.name ? user.name.charAt(0).toUpperCase() : '?';
+            }
+        }
+
+        // === НАВИГАЦИЯ И ПОИСК ===
+        window.switchView = (viewName, element) => {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-' + viewName).classList.add('active');
+        };
+
+        window.renderUsersList = () => {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const list = document.getElementById('chat-list');
+            list.innerHTML = '';
+            
+            Object.values(allUsers).forEach(user => {
+                // Жесткий фильтр: пропускаем битых или пустых пользователей, а также самих себя
+                if (!user || !user.name || !user.id || user.id === currentUser.id) return; 
+                
+                if (query && !user.name.toLowerCase().includes(query)) return;
+
+                const statusStr = user.isOnline ? '<span class="online-dot"></span> В сети' : 'Оффлайн';
+                const el = document.createElement('div');
+                el.className = `chat-item ${activeUserId === user.id ? 'active' : ''}`;
+                el.onclick = () => window.openChat(user);
+                el.innerHTML = `
+                    <div class="avatar" id="list-ava-${user.id}"></div>
+                    <div class="chat-info">
+                        <div class="chat-name">${user.name}</div>
+                        <div class="chat-status">${statusStr}</div>
+                    </div>
+                `;
+                list.appendChild(el);
+                renderAvatar(document.getElementById(`list-ava-${user.id}`), user);
+            });
+        };
+
+        // === ЛОГИКА ЧАТА ===
+        window.openChat = (user) => {
+            activeUserId = user.id;
+            activeChatId = [currentUser.id, user.id].sort().join('_'); 
+            
+            document.getElementById('chat-empty').classList.add('hidden');
+            document.getElementById('chat-active').classList.remove('hidden');
+            renderAvatar(document.getElementById('active-chat-avatar'), user);
+            document.getElementById('active-chat-name').innerText = user.name;
+            document.getElementById('active-chat-status').innerHTML = user.isOnline ? '<span class="online-dot"></span> В сети' : 'Был(а) недавно';
+            
+            if (window.innerWidth <= 768) document.getElementById('chat-area').classList.add('active');
+            
+            window.renderUsersList();
+            loadMessages();
+        };
+
+        window.closeChatMobile = () => { document.getElementById('chat-area').classList.remove('active'); activeUserId = null; window.renderUsersList(); };
+
+        function loadMessages() {
+            const msgsRef = ref(db, 'messages/' + activeChatId);
+            const container = document.getElementById('messages-container');
+            
+            onValue(msgsRef, (snapshot) => {
+                container.innerHTML = '';
+                const data = snapshot.val();
+                if (!data) return;
+
+                let updatesNeeded = {};
+
+                Object.keys(data).forEach(key => {
+                    const msg = data[key];
+                    msg.firebaseKey = key;
+
+                    if (msg.senderId !== currentUser.id && msg.status === 'sent') {
+                        updatesNeeded[`messages/${activeChatId}/${key}/status`] = 'read';
+                    }
+
+                    renderSingleMessage(msg, container);
+                });
+
+                if(Object.keys(updatesNeeded).length > 0) {
+                    update(ref(db), updatesNeeded);
+                }
+
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+
+        function renderSingleMessage(msg, container) {
+            const isMe = msg.senderId === currentUser.id;
+            const row = document.createElement('div');
+            row.className = `message-row ${isMe ? 'outgoing' : 'incoming'}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = `message ${isMe ? 'outgoing' : 'incoming'}`;
+            
+            let pressTimer;
+            bubble.onmousedown = bubble.ontouchstart = () => { pressTimer = setTimeout(() => window.openBottomSheet(msg, isMe), 500); };
+            bubble.onmouseup = bubble.onmouseleave = bubble.ontouchend = bubble.ontouchmove = () => clearTimeout(pressTimer);
+
+            let contentHTML = '';
+            
+            if (msg.type === 'text') contentHTML += `<div>${msg.text.replace(/\n/g, '<br>')}</div>`;
+            else if (msg.type === 'image') contentHTML += `<img src="${msg.url}" class="msg-media" onclick="window.openViewer('image', '${msg.url}')" />`;
+            else if (msg.type === 'video') contentHTML += `<video src="${msg.url}" class="msg-media" onclick="window.openViewer('video', '${msg.url}')"></video>`;
+            else if (msg.type === 'document') {
+                contentHTML += `
+                    <div class="msg-doc" onclick="window.openViewer('document', '${msg.url}', '${msg.fileName}')">
+                        <span class="icon" style="font-size:32px;">description</span>
+                        <div style="display:flex; flex-direction:column; overflow:hidden;">
+                            <span style="font-weight:600; font-size:14px;">${msg.fileName}</span>
+                            <span style="font-size:12px; opacity:0.8;">${msg.fileSize}</span>
+                        </div>
+                    </div>`;
+            }
+            else if (msg.type === 'voice') {
+                contentHTML += `<div class="msg-audio"><span class="icon" style="color: ${isMe ? 'white' : 'var(--accent)'}; font-size:28px;">mic</span><audio controls src="${msg.url}" controlsList="nodownload noplaybackrate"></audio></div>`;
+            }
+
+            let statusHTML = '';
+            if(isMe) {
+                const isRead = msg.status === 'read';
+                statusHTML = `<span class="icon tick-icon ${isRead ? 'read' : 'sent'}">${isRead ? 'done_all' : 'check'}</span>`;
+            }
+            
+            contentHTML += `<div class="msg-meta">${msg.time} ${statusHTML}</div>`;
+            bubble.innerHTML = contentHTML;
+            row.appendChild(bubble);
+            container.appendChild(row);
+        }
+
+        // === ОТПРАВКА ===
+        function getFormattedTime() { return new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }
+
+        window.sendTextMessage = () => {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text || !activeChatId) return;
+            
+            push(ref(db, 'messages/' + activeChatId), { senderId: currentUser.id, type: 'text', text: text, time: getFormattedTime(), status: 'sent' });
+            input.value = ''; input.style.height = 'auto'; window.setupInputWatch();
+        };
+
+        window.handleEnter = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendTextMessage(); } };
+        window.autoResize = (textarea) => { textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; };
+        
+        window.setupInputWatch = () => {
+            const input = document.getElementById('message-input');
+            if(!input) return;
+            const btnMic = document.getElementById('btn-mic');
+            const btnSend = document.getElementById('btn-send');
+            input.addEventListener('input', () => {
+                if (input.value.trim() !== '') { btnMic.classList.add('hidden'); btnSend.classList.remove('hidden'); } 
+                else { btnMic.classList.remove('hidden'); btnSend.classList.add('hidden'); }
+            });
+        };
+
+        window.handleFileUpload = (e) => {
+            const file = e.target.files[0];
+            if(!file || !activeChatId) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                const pureBase64 = ev.target.result.split(',')[1];
+                let type = 'document';
+                if (file.type.startsWith('image/')) type = 'image';
+                else if (file.type.startsWith('video/')) type = 'video';
+                
+                const ghUrl = await uploadToGitHub(pureBase64, file.name);
+                if(ghUrl) {
+                    push(ref(db, 'messages/' + activeChatId), { 
+                        senderId: currentUser.id, type: type, url: ghUrl, 
+                        fileName: file.name, fileSize: (file.size / 1024).toFixed(1) + ' KB', 
+                        time: getFormattedTime(), status: 'sent' 
+                    });
+                }
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        };
+
+        let mediaRecorder, audioChunks = [], isRecording = false;
+        window.startVoice = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                        const pureBase64 = reader.result.split(',')[1];
+                        const ghUrl = await uploadToGitHub(pureBase64, 'voice.webm');
+                        if(ghUrl) {
+                            push(ref(db, 'messages/' + activeChatId), { senderId: currentUser.id, type: 'voice', url: ghUrl, time: getFormattedTime(), status: 'sent' });
+                        }
+                    };
+                    reader.readAsDataURL(audioBlob);
+                    audioChunks = [];
+                };
+                mediaRecorder.start(); isRecording = true; 
+                document.getElementById('btn-mic').style.background = '#ef4444'; 
+            } catch (err) { alert('Нет доступа к микрофону'); }
+        };
+        window.stopVoice = () => {
+            if (isRecording && mediaRecorder) { 
+                mediaRecorder.stop(); isRecording = false; 
+                document.getElementById('btn-mic').style.background = '#10b981';
+                mediaRecorder.stream.getTracks().forEach(t => t.stop()); 
+            }
+        };
+
+        // === ДЕЙСТВИЯ (BOTTOM SHEET) ===
+        window.openBottomSheet = (msg, isMe) => {
+            targetMsgId = msg.firebaseKey;
+            document.getElementById('bs-delete').style.display = isMe ? 'flex' : 'none';
+            document.getElementById('bottom-sheet-overlay').classList.add('active');
+            setTimeout(() => document.getElementById('bottom-sheet').classList.add('active'), 10);
+        };
+        window.closeBottomSheet = () => {
+            document.getElementById('bottom-sheet').classList.remove('active');
+            setTimeout(() => document.getElementById('bottom-sheet-overlay').classList.remove('active'), 300);
+        };
+        window.execAction = (action) => {
+            window.closeBottomSheet();
+            if(action === 'delete' && targetMsgId && activeChatId) {
+                if(confirm('Удалить сообщение для всех?')) {
+                    remove(ref(db, `messages/${activeChatId}/${targetMsgId}`));
+                }
+            }
+        };
+        window.copyTextMobile = () => {
+            get(ref(db, `messages/${activeChatId}/${targetMsgId}`)).then(snapshot => {
+                const msg = snapshot.val();
+                if(msg && msg.type === 'text') {
+                    navigator.clipboard.writeText(msg.text);
+                    alert('Скопировано');
+                }
+                window.closeBottomSheet();
+            });
+        };
+
+        // === VIEWER ===
+        window.openViewer = (type, url, name) => {
+            const body = document.getElementById('viewer-body');
+            document.getElementById('viewer-download').href = url;
+            if (type === 'image') body.innerHTML = `<img src="${url}">`;
+            else if (type === 'video') body.innerHTML = `<video src="${url}" controls autoplay></video>`;
+            else if (type === 'document') body.innerHTML = `<span class="icon" style="font-size:100px;">description</span><h3 style="margin-top:16px;">${name}</h3>`;
+            document.getElementById('viewer-overlay').classList.add('active');
+        };
+        window.closeViewer = () => {
+            document.getElementById('viewer-overlay').classList.remove('active');
+            document.getElementById('viewer-body').innerHTML = ''; 
+        };
+
+        // === ТЕМА ===
+        function initTheme() {
+            const saved = localStorage.getItem('nexus_theme') || 'light';
+            document.body.setAttribute('data-theme', saved);
+            const ind = document.getElementById('theme-indicator');
+            if(ind) {
+                ind.innerText = saved === 'dark' ? 'toggle_on' : 'toggle_off';
+                ind.style.color = saved === 'dark' ? 'var(--accent)' : 'var(--text-muted)';
+            }
+        }
+        window.toggleTheme = () => {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            localStorage.setItem('nexus_theme', isDark ? 'light' : 'dark');
+            initTheme();
+        };
+    </script>
+</body>
+</html>
