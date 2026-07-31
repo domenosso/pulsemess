@@ -8,7 +8,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#ffffff" id="theme-color-meta">
     
-    <!-- Название и Иконка -->
     <title>Nano</title>
     <link rel="icon" type="image/png" href="icon.png">
 
@@ -19,85 +18,99 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
 
     <style>
+        /* === КАСТОМНЫЕ СТИЛИ (ОТКЛЮЧЕНИЕ СТАНДАРТОВ БРАУЗЕРА) === */
+        * {
+            box-sizing: border-box; margin: 0; padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            appearance: none; -webkit-appearance: none; outline: none;
+        }
+        
+        ::selection { background: var(--accent); color: #fff; }
+        ::-moz-selection { background: var(--accent); color: #fff; }
+
+        /* Кастомный скроллбар */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(150, 150, 150, 0.4); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(150, 150, 150, 0.6); }
+
         /* === БАЗОВЫЕ ПЕРЕМЕННЫЕ (Светлая тема) === */
         :root {
             --bg-main: #f3f4f6; --bg-panel: #ffffff; --bg-chat: #efeae2; --bg-input: #f3f4f6; --bg-hover: #f9fafb;
             --text-main: #111827; --text-muted: #6b7280; --accent: #007aff; --accent-hover: #005bb5;
             --msg-out: #007aff; --msg-out-text: #ffffff; --msg-in: #ffffff; --msg-in-text: #111827;
-            --border: #e5e7eb; --glass-bg: rgba(255, 255, 255, 0.85); --nav-bg: rgba(255, 255, 255, 0.95);
+            --border: #e5e7eb; --glass-bg: rgba(255, 255, 255, 0.95); --nav-bg: #ffffff;
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.05); --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1);
         }
 
         /* === ТЁМНАЯ ТЕМА === */
         [data-theme="dark"] {
-            --bg-main: #000000; --bg-panel: #1c1c1e; --bg-chat: #000000; --bg-input: #2c2c2e; --bg-hover: #2c2c2e;
+            --bg-main: #000000; --bg-panel: #1c1c1e; --bg-chat: #000000; --bg-input: #2c2c2e; --bg-hover: #3a3a3c;
             --text-main: #ffffff; --text-muted: #98989d; --accent: #0a84ff; --accent-hover: #007aff;
             --msg-out: #0a84ff; --msg-out-text: #ffffff; --msg-in: #2c2c2e; --msg-in-text: #ffffff;
-            --border: #38383a; --glass-bg: rgba(28, 28, 30, 0.85); --nav-bg: rgba(28, 28, 30, 0.95);
+            --border: #38383a; --glass-bg: rgba(28, 28, 30, 0.95); --nav-bg: #1c1c1e;
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.5); --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.5);
         }
 
         /* === РЕЖИМ СТЕКЛА (APPLE LIQUID GLASS iOS 26) === */
         body[data-glass="true"]::before {
             content: ''; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: -1;
-            background: linear-gradient(120deg, #ff9a9e 0%, #fecfef 50%, #a1c4fd 100%);
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #a1c4fd 100%);
             background-size: 200% 200%;
             animation: gradientMove 15s ease infinite;
         }
         body[data-theme="dark"][data-glass="true"]::before {
-            background: linear-gradient(120deg, #09203f 0%, #537895 50%, #1a1a2e 100%);
+            background: linear-gradient(135deg, #09203f 0%, #537895 50%, #1a1a2e 100%);
         }
         
         @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
         body[data-glass="true"] {
-            --bg-main: transparent;
-            --bg-panel: rgba(255, 255, 255, 0.3);
-            --bg-chat: transparent;
-            --bg-input: rgba(255, 255, 255, 0.4);
-            --bg-hover: rgba(255, 255, 255, 0.2);
-            --border: rgba(255, 255, 255, 0.3);
-            --glass-bg: rgba(255, 255, 255, 0.2);
-            --nav-bg: rgba(255, 255, 255, 0.2);
-            --msg-in: rgba(255, 255, 255, 0.5);
-            --msg-out: rgba(0, 122, 255, 0.75);
-            --shadow-sm: 0 4px 6px rgba(0,0,0,0.05);
-            --shadow-lg: 0 15px 35px rgba(0,0,0,0.1);
+            --bg-main: transparent; --bg-chat: transparent;
+            --bg-panel: rgba(255, 255, 255, 0.45);
+            --bg-input: rgba(255, 255, 255, 0.5);
+            --bg-hover: rgba(255, 255, 255, 0.3);
+            --border: rgba(255, 255, 255, 0.35);
+            --glass-bg: rgba(255, 255, 255, 0.45);
+            --nav-bg: rgba(255, 255, 255, 0.45);
+            --msg-in: rgba(255, 255, 255, 0.65);
+            --msg-out: rgba(0, 122, 255, 0.85);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.15);
         }
         body[data-theme="dark"][data-glass="true"] {
-            --bg-panel: rgba(28, 28, 30, 0.35);
-            --bg-input: rgba(28, 28, 30, 0.5);
-            --bg-hover: rgba(255, 255, 255, 0.1);
-            --border: rgba(255, 255, 255, 0.1);
-            --glass-bg: rgba(28, 28, 30, 0.3);
-            --nav-bg: rgba(28, 28, 30, 0.3);
-            --msg-in: rgba(44, 44, 46, 0.6);
-            --msg-out: rgba(10, 132, 255, 0.8);
+            --bg-panel: rgba(28, 28, 30, 0.45);
+            --bg-input: rgba(44, 44, 46, 0.5);
+            --bg-hover: rgba(255, 255, 255, 0.15);
+            --border: rgba(255, 255, 255, 0.15);
+            --glass-bg: rgba(28, 28, 30, 0.45);
+            --nav-bg: rgba(28, 28, 30, 0.45);
+            --msg-in: rgba(44, 44, 46, 0.65);
+            --msg-out: rgba(10, 132, 255, 0.85);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.35);
         }
 
-        /* Применение эффекта матового стекла ко всем панелям */
+        /* Мощный матовый Apple фильтр */
         body[data-glass="true"] #app-screen, body[data-glass="true"] .auth-card,
         body[data-glass="true"] #main-nav, body[data-glass="true"] .view-section,
         body[data-glass="true"] .chat-header, body[data-glass="true"] .chat-input-area,
-        body[data-glass="true"] .bottom-sheet {
-            backdrop-filter: blur(35px) saturate(200%);
-            -webkit-backdrop-filter: blur(35px) saturate(200%);
+        body[data-glass="true"] .bottom-sheet, body[data-glass="true"] .pwa-card {
+            backdrop-filter: blur(40px) saturate(200%);
+            -webkit-backdrop-filter: blur(40px) saturate(200%);
             border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
         }
 
         /* === БАЗА === */
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; }
         body { background-color: var(--bg-main); color: var(--text-main); height: 100dvh; overflow: hidden; display: flex; justify-content: center; user-select: none; transition: background-color 0.3s; overscroll-behavior-y: none; }
-        input, button, textarea { outline: none; border: none; color: inherit; }
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; opacity: 0.3; }
+        input, button, textarea { border: none; color: inherit; background: none; }
         .icon { font-family: 'Material Symbols Rounded'; font-size: 24px; display: inline-block; user-select: none; }
         .hidden { display: none !important; }
 
         /* === UI ЭЛЕМЕНТЫ === */
         .btn { background: var(--accent); color: white; padding: 14px 24px; border-radius: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; box-shadow: 0 4px 14px rgba(0, 122, 255, 0.3); }
         .btn:active { transform: scale(0.96); }
-        .btn:hover { background: var(--accent-hover); }
+        .btn:hover { filter: brightness(1.1); }
         .btn-icon { color: var(--text-muted); padding: 10px; border-radius: 50%; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
         .btn-icon:hover { background: var(--bg-hover); color: var(--text-main); }
         
@@ -110,19 +123,19 @@
         .avatar { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; background-size: cover; background-position: center; box-shadow: var(--shadow-sm); flex-shrink: 0; font-weight: 600; }
         .avatar-upload-circle { width: 100px; height: 100px; border-radius: 50%; background: var(--bg-input); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed var(--border); transition: 0.2s; color: var(--text-muted); background-size: cover; background-position: center; position: relative; overflow: hidden; margin: 0 auto 20px auto; }
         
-        /* === ВХОД И РЕГИСТРАЦИЯ === */
-        #auth-screen { width: 100%; height: 100%; background: var(--bg-main); position: absolute; z-index: 100; display: flex; align-items: center; justify-content: center; }
-        .auth-card { background: var(--bg-panel); padding: 40px; border-radius: 32px; box-shadow: var(--shadow-lg); width: 90%; max-width: 400px; border: 1px solid var(--border); }
+        /* === ВХОД === */
+        #auth-screen { width: 100%; height: 100%; position: absolute; z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .auth-card { background: var(--bg-panel); padding: 40px; border-radius: 32px; box-shadow: var(--shadow-lg); width: 90%; max-width: 400px; }
         .input-group { margin-bottom: 20px; text-align: left; }
         .input-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
         .input-group input { width: 100%; padding: 16px; background: var(--bg-input); border-radius: 16px; font-size: 16px; color: var(--text-main); transition: 0.3s; border: 2px solid transparent; }
-        .input-group input:focus { border-color: var(--accent); background: transparent; }
-        .auth-toggle-link { text-align: center; font-size: 14px; font-weight: 600; color: var(--accent); cursor: pointer; margin-top: 16px; transition: 0.2s; }
-        
+        .input-group input:focus { border-color: var(--accent); }
+        .auth-toggle-link { text-align: center; font-size: 14px; font-weight: 600; color: var(--accent); cursor: pointer; margin-top: 16px; }
+
         /* === ГЛАВНОЕ ОКНО === */
         #app-screen { width: 100%; max-width: 1400px; height: 100%; display: flex; background: var(--bg-panel); box-shadow: var(--shadow-lg); overflow: hidden; position: relative; }
         #main-nav { background: var(--nav-bg); z-index: 40; border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; gap: 20px; width: 80px; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); cursor: pointer; padding: 12px; border-radius: 16px; font-size: 11px; font-weight: 500; transition: 0.2s; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); cursor: pointer; padding: 12px; border-radius: 16px; font-size: 11px; font-weight: 500; transition: 0.2s; position: relative; }
         .nav-item.active { color: var(--accent); background: rgba(0, 122, 255, 0.1); }
 
         #views-container { flex: 1; max-width: 420px; border-right: 1px solid var(--border); background: var(--bg-panel); display: flex; flex-direction: column; position: relative; }
@@ -134,16 +147,20 @@
         
         .search-bar { background: var(--bg-input); padding: 12px 16px; border-radius: 16px; display: flex; align-items: center; gap: 10px; margin: 10px; border: 1px solid transparent; transition: 0.2s; }
         .search-bar:focus-within { border-color: var(--accent); }
-        .search-bar input { background: transparent; width: 100%; font-size: 15px; }
+        .search-bar input { width: 100%; font-size: 15px; }
 
-        .chat-item { display: flex; align-items: center; padding: 12px; gap: 16px; border-radius: 16px; cursor: pointer; margin-bottom: 4px; transition: 0.2s; }
+        .chat-item { display: flex; align-items: center; padding: 12px; gap: 16px; border-radius: 16px; cursor: pointer; margin-bottom: 4px; transition: 0.2s; position: relative; }
         .chat-item:hover { background: var(--bg-hover); }
         .chat-item.active { background: var(--accent); color: var(--msg-out-text); }
         .chat-info { flex: 1; overflow: hidden; }
         .chat-name { font-weight: 600; font-size: 16px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .chat-status { font-size: 13px; color: var(--text-muted); }
         .chat-item.active .chat-status { color: rgba(255,255,255,0.8); }
-        .online-dot { width: 10px; height: 10px; background: #34c759; border-radius: 50%; display: inline-block; margin-left: 6px; border: 2px solid var(--bg-panel); }
+        .online-dot { width: 10px; height: 10px; background: #34c759; border-radius: 50%; display: inline-block; margin-right: 4px; border: 2px solid var(--bg-panel); vertical-align: middle; }
+        
+        /* КРУЖОК УВЕДОМЛЕНИЙ (СЧЕТЧИК) */
+        .badge { background: #ff3b30; color: #fff; font-size: 12px; font-weight: bold; border-radius: 12px; padding: 2px 8px; min-width: 20px; text-align: center; box-shadow: 0 2px 5px rgba(255, 59, 48, 0.4); display: none; }
+        .chat-item.active .badge { background: #fff; color: var(--accent); }
 
         .settings-item { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: var(--bg-input); border-radius: 16px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
         .settings-item:hover { transform: scale(0.98); }
@@ -166,13 +183,12 @@
         .msg-doc { display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 12px; cursor: pointer; }
         body[data-glass="true"] .msg-doc { background: rgba(255,255,255,0.2); }
         .msg-audio { margin-top: 4px; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.05); padding: 6px 12px; border-radius: 20px; }
-        .msg-audio audio { height: 36px; width: 220px; outline: none; border-radius: 18px; }
+        .msg-audio audio { height: 36px; width: 220px; border-radius: 18px; outline: none; }
         
-        /* Галочки и время (ОТРЕДАКТИРОВАНО ДЛЯ ВИДИМОСТИ) */
         .msg-meta { display: flex; align-items: center; gap: 4px; font-size: 11px; margin-top: 4px; justify-content: flex-end; opacity: 0.9; }
         .tick-icon { font-size: 16px !important; margin-left: -2px; }
-        .tick-icon.sent { color: rgba(255, 255, 255, 0.6); } /* Полупрозрачная белая для отправленных */
-        .tick-icon.read { color: #ffffff; } /* Яркая белая для прочитанных (на синем фоне) */
+        .tick-icon.sent { color: rgba(255, 255, 255, 0.6); } 
+        .tick-icon.read { color: #ffffff; }
 
         .chat-input-area { padding: 12px 20px; display: flex; align-items: flex-end; gap: 12px; background: var(--glass-bg); border-top: 1px solid var(--border); }
         .input-box { flex: 1; display: flex; align-items: center; background: var(--bg-input); border-radius: 24px; padding: 8px 16px; border: 1px solid transparent; transition: 0.3s; }
@@ -183,7 +199,7 @@
         .btn-send { background: var(--accent); color: white; }
         .btn-mic { background: #34c759; color: white; }
 
-        /* ОВЕРЛЕИ */
+        /* ОВЕРЛЕИ И ПОПАПЫ */
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; backdrop-filter: blur(10px); }
         .overlay.active { opacity: 1; pointer-events: auto; }
         .viewer-content { max-width: 90%; max-height: 80vh; display: flex; flex-direction: column; align-items: center; gap: 20px; color: white; }
@@ -195,11 +211,16 @@
         .menu-item:hover { background: var(--bg-input); }
 
         /* Лоадер */
-        #loader-overlay { background: rgba(0,0,0,0.8); flex-direction: column; color: white; font-weight: 600; }
+        #loader-overlay { background: rgba(0,0,0,0.8); flex-direction: column; color: white; font-weight: 600; z-index: 9999; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* МОБИЛЬНАЯ АДАПТАЦИЯ (ANDROID / iOS) */
+        /* PWA ПОПАП */
+        .pwa-card { background: var(--bg-panel); padding: 30px; border-radius: 24px; text-align: center; max-width: 320px; box-shadow: var(--shadow-lg); animation: popIn 0.3s ease-out; position: relative; }
+        .pwa-card img { width: 80px; height: 80px; border-radius: 20px; margin-bottom: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .pwa-card h2 { font-size: 20px; margin-bottom: 10px; }
+        .pwa-card p { font-size: 14px; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px; }
+
         @media (max-width: 768px) {
             #main-nav { flex-direction: row; width: 100%; height: auto; position: absolute; bottom: 0; left: 0; justify-content: space-around; padding: 10px 0; padding-bottom: calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); border-right: none; }
             .nav-item { flex: 1; padding: 8px; }
@@ -213,10 +234,24 @@
 </head>
 <body data-theme="light" data-glass="false">
 
+    <!-- Аудио уведомления -->
+    <audio id="notify-sound" src="notify.mp3" preload="auto"></audio>
+
     <!-- Лоадер -->
     <div id="loader-overlay" class="overlay">
         <div class="spinner"></div>
         <div id="loader-text">Загрузка...</div>
+    </div>
+
+    <!-- PWA Инструкция -->
+    <div id="pwa-modal" class="overlay">
+        <div class="pwa-card">
+            <span class="icon btn-icon" style="position: absolute; top: 10px; right: 10px;" onclick="window.closePwaModal()">close</span>
+            <img src="icon.png" alt="Nano App" onerror="this.style.display='none'">
+            <h2>Установите Nano</h2>
+            <p id="pwa-text">Установите приложение для более быстрой работы, уведомлений и оффлайн доступа.</p>
+            <button class="btn" style="width: 100%" onclick="window.closePwaModal()">Понятно</button>
+        </div>
     </div>
 
     <!-- Авторизация -->
@@ -251,7 +286,10 @@
     <!-- Основное приложение -->
     <div id="app-screen" class="hidden">
         <nav id="main-nav">
-            <div class="nav-item active" onclick="window.switchView('chats', this)"><span class="icon">chat_bubble</span><span>Чаты</span></div>
+            <div class="nav-item active" onclick="window.switchView('chats', this)">
+                <span class="icon">chat_bubble</span><span>Чаты</span>
+                <span id="total-badge" class="badge" style="position: absolute; top: 5px; right: 15px; border: 2px solid var(--nav-bg);">0</span>
+            </div>
             <div class="nav-item" onclick="window.switchView('settings', this)"><span class="icon">settings</span><span>Настройки</span></div>
             <div class="nav-item" onclick="window.switchView('profile', this)"><span class="icon">account_circle</span><span>Профиль</span></div>
         </nav>
@@ -260,11 +298,9 @@
             <!-- Чаты -->
             <div id="view-chats" class="view-section active">
                 <div class="view-header">Чаты</div>
-                <div class="search-bar"><span class="icon" style="color: var(--text-muted);">search</span><input type="text" id="search-input" placeholder="Поиск людей (введите имя)..." oninput="window.renderUsersList()"></div>
+                <div class="search-bar"><span class="icon" style="color: var(--text-muted);">search</span><input type="text" id="search-input" placeholder="Поиск людей..." oninput="window.renderUsersList()"></div>
                 
-                <div id="chat-list" class="view-content">
-                    <!-- Здесь будут чаты -->
-                </div>
+                <div id="chat-list" class="view-content"></div>
             </div>
 
             <!-- Настройки -->
@@ -280,11 +316,16 @@
                         <div style="display:flex; flex-direction:column;">
                             <div style="display:flex; gap:12px; align-items:center;">
                                 <span class="icon" style="color: #ff2d55;">blur_on</span>
-                                <span>Режим стекла (Beta)</span>
+                                <span>Режим стекла (Apple Style)</span>
                             </div>
-                            <span style="font-size:11px; color:var(--text-muted); margin-top:4px; margin-left:36px;">Стиль Apple Liquid Glass iOS 26</span>
+                            <span style="font-size:11px; color:var(--text-muted); margin-top:4px; margin-left:36px;">В стиле Liquid Glass iOS 26</span>
                         </div>
                         <span class="icon" id="glass-indicator" style="color: var(--text-muted);">toggle_off</span>
+                    </div>
+                    
+                    <div class="settings-item" onclick="window.requestNotifyPerms()">
+                        <div style="display:flex; gap:12px;"><span class="icon">notifications</span><span>Включить Push-уведомления</span></div>
+                        <span class="icon" style="color: var(--text-muted);">chevron_right</span>
                     </div>
                 </div>
             </div>
@@ -337,7 +378,6 @@
                         <textarea id="message-input" rows="1" placeholder="Сообщение..." oninput="window.autoResize(this)" onkeydown="window.handleEnter(event)"></textarea>
                     </div>
                     
-                    <!-- БЛОКИРОВКА СИСТЕМНОГО МЕНЮ ДЛЯ ГС (oncontextmenu) -->
                     <div id="btn-mic" class="circle-btn btn-mic" onmousedown="window.startVoice()" onmouseup="window.stopVoice()" ontouchstart="window.startVoice()" ontouchend="window.stopVoice()" oncontextmenu="return false;">
                         <span class="icon">mic</span>
                     </div>
@@ -368,26 +408,26 @@
         </div>
     </div>
 
-    <!-- ЛОГИКА APP (Firebase + GitHub) -->
+    <!-- ЛОГИКА APP -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getDatabase, ref, set, get, push, onValue, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+        import { getStorage, ref as sRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js"; // Используем Firebase Storage!
 
         const firebaseConfig = {
             apiKey: "AIzaSyBp3rh42vhASN-6eK6Tm7zmUXuEwG3pfHY",
             authDomain: "anonmessage-cfd86.firebaseapp.com",
             databaseURL: "https://anonmessage-cfd86-default-rtdb.firebaseio.com",
             projectId: "anonmessage-cfd86",
-            storageBucket: "anonmessage-cfd86.firebasestorage.app",
+            storageBucket: "anonmessage-cfd86.firebasestorage.app", // Ваш Storage
             messagingSenderId: "543836567582",
             appId: "1:543836567582:web:9df559a58cd9f385c8960f",
             measurementId: "G-6TENT6S5JZ"
         };
-        const GH_TOKEN = "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";
-        const GH_REPO = "domenosso/nano-mess-cloud";
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const storage = getStorage(app); // Инициализация Storage
 
         let currentUser = null;
         let allUsers = {};
@@ -396,22 +436,30 @@
         let targetMsgId = null; 
         let tempAvatarBase64 = null; 
         let isLoginMode = false;
+        
+        let chatListeners = {};
+        let knownMessages = new Set();
+        let isAppReady = false; // Блокировка звука при первом запуске
+        
+        // Аудио для уведомлений
+        const notifyAudio = document.getElementById('notify-sound');
 
-        async function uploadToGitHub(base64Data, filename) {
+        // ЗАГРУЗКА В FIREBASE STORAGE (РАБОТАЕТ ВСЕГДА В ОТЛИЧИИ ОТ GITHUB)
+        async function uploadFileToFirebase(base64Data, filename, mimeType = 'image/jpeg') {
             document.getElementById('loader-overlay').classList.add('active');
             try {
                 const safeName = Date.now() + '_' + filename.replace(/[^a-zA-Z0-9.]/g, '_');
-                const url = `https://api.github.com/repos/${GH_REPO}/contents/uploads/${safeName}`;
-                const response = await fetch(url, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `token ${GH_TOKEN}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: `Upload ${safeName}`, content: base64Data })
-                });
-                if(!response.ok) throw new Error('GitHub API Error');
-                const data = await response.json();
-                return data.content.download_url;
+                const fileRef = sRef(storage, 'uploads/' + safeName);
+                
+                // Загружаем pure base64 (строку) в Firebase
+                await uploadString(fileRef, base64Data, 'base64', { contentType: mimeType });
+                
+                // Получаем публичную ссылку
+                const url = await getDownloadURL(fileRef);
+                return url;
             } catch (e) {
-                alert('Ошибка загрузки файла в облако');
+                console.error(e);
+                alert('Ошибка загрузки файла. Убедитесь, что в Firebase Storage Rules стоит: allow read, write: if true;');
                 return null;
             } finally {
                 document.getElementById('loader-overlay').classList.remove('active');
@@ -421,14 +469,44 @@
         window.onload = () => {
             initTheme();
             initGlassMode();
-            const stored = localStorage.getItem('nano_user'); // Переименовали localstorage
+            checkPWA(); // Проверка на PWA
+            
+            const stored = localStorage.getItem('nano_user');
             if (stored) {
                 currentUser = JSON.parse(stored);
                 showApp();
                 setupPresence();
             }
-            setupInputWatch();
+            window.setupInputWatch();
+            
+            setTimeout(() => { isAppReady = true; }, 2000); // через 2 сек разрешаем звуки
         };
+
+        // ПРОВЕРКА PWA УСТАНОВКИ (Инструкции)
+        function checkPWA() {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            if (!isStandalone) {
+                const ua = navigator.userAgent.toLowerCase();
+                let text = "Установите приложение для работы уведомлений и стабильного соединения!<br><br>";
+                
+                if (/iphone|ipad|ipod/.test(ua)) {
+                    text += "Нажмите <b>Поделиться</b> (Квадрат со стрелкой внизу), затем выберите <b>«На экран Домой»</b>.";
+                } else if (/android/.test(ua)) {
+                    text += "Нажмите в меню браузера (три точки) <b>«Установить приложение»</b> или <b>«Добавить на главный экран»</b>.";
+                } else {
+                    text += "Нажмите иконку установки в адресной строке браузера сверху справа.";
+                }
+                
+                document.getElementById('pwa-text').innerHTML = text;
+                
+                // Показываем попап через 2 секунды если не авторизованы
+                setTimeout(() => {
+                    document.getElementById('pwa-modal').classList.add('active');
+                }, 2000);
+            }
+        }
+        
+        window.closePwaModal = () => document.getElementById('pwa-modal').classList.remove('active');
 
         window.toggleAuthMode = () => {
             isLoginMode = !isLoginMode;
@@ -441,11 +519,10 @@
         window.submitAuth = async () => {
             const name = document.getElementById('auth-name').value.trim();
             const pass = document.getElementById('auth-pass').value.trim();
-            
             if(!name || !pass) return alert('Введите логин и пароль');
+            
             document.getElementById('loader-overlay').classList.add('active');
-            document.getElementById('loader-text').innerText = 'Проверка...';
-
+            
             try {
                 const snapshot = await get(ref(db, 'users'));
                 const users = snapshot.val() || {};
@@ -460,7 +537,7 @@
                     let avatarUrl = null;
                     if (tempAvatarBase64) {
                         const pureBase64 = tempAvatarBase64.split(',')[1];
-                        avatarUrl = await uploadToGitHub(pureBase64, 'avatar.jpg');
+                        avatarUrl = await uploadFileToFirebase(pureBase64, 'avatar.jpg', 'image/jpeg');
                     }
                     const userId = 'user_' + Date.now();
                     currentUser = { id: userId, name: name, password: pass, avatarUrl: avatarUrl, color: '#007aff', isOnline: true, chats: {} };
@@ -470,8 +547,9 @@
                 localStorage.setItem('nano_user', JSON.stringify({id: currentUser.id, name: currentUser.name, avatarUrl: currentUser.avatarUrl, color: currentUser.color, chats: currentUser.chats || {}}));
                 showApp();
                 setupPresence();
-            } catch (e) { alert('Ошибка связи с сервером'); } 
-            finally { document.getElementById('loader-overlay').classList.remove('active'); document.getElementById('loader-text').innerText = 'Загрузка...'; }
+                window.requestNotifyPerms();
+            } catch (e) { alert('Ошибка связи с сервером'); console.error(e); } 
+            finally { document.getElementById('loader-overlay').classList.remove('active'); }
         };
 
         function setupPresence() {
@@ -490,15 +568,91 @@
 
             onValue(ref(db, 'users'), snapshot => {
                 allUsers = snapshot.val() || {};
-                // Синхронизируем локальный профиль, если обновились чаты
                 if(allUsers[currentUser.id]) currentUser.chats = allUsers[currentUser.id].chats || {};
                 
                 window.renderUsersList();
+                watchAllMyChats(); // Запуск слежки за непрочитанными
+
                 if (activeUserId && allUsers[activeUserId]) {
                     const statusText = allUsers[activeUserId].isOnline ? '<span class="online-dot"></span> В сети' : 'Был(а) недавно';
                     document.getElementById('active-chat-status').innerHTML = statusText;
                 }
             });
+        }
+
+        // ГЛОБАЛЬНАЯ СЛЕЖКА ЗА ЧАТАМИ ДЛЯ СЧЕТЧИКА И УВЕДОМЛЕНИЙ
+        function watchAllMyChats() {
+            if (!currentUser || !currentUser.chats) return;
+            
+            let totalUnreadGlobal = 0;
+            
+            Object.keys(currentUser.chats).forEach(userId => {
+                const chatId = [currentUser.id, userId].sort().join('_');
+                if (chatListeners[chatId]) return; 
+
+                const msgsRef = ref(db, 'messages/' + chatId);
+                chatListeners[chatId] = onValue(msgsRef, (snapshot) => {
+                    let unread = 0;
+                    let hasNew = false;
+                    let latestMsgText = "Сообщение";
+                    const data = snapshot.val();
+                    
+                    if (data) {
+                        Object.keys(data).forEach(key => {
+                            const msg = data[key];
+                            
+                            // Подсчет непрочитанных
+                            if (msg.senderId !== currentUser.id && msg.status === 'sent') {
+                                if (activeChatId === chatId) {
+                                    // Если мы находимся в этом чате, отмечаем прочитанным
+                                    update(ref(db, `messages/${chatId}/${key}`), { status: 'read' });
+                                } else {
+                                    unread++;
+                                }
+                            }
+
+                            // Проверка на НОВОЕ сообщение для звука и пуша
+                            if (!knownMessages.has(key)) {
+                                knownMessages.add(key);
+                                if (msg.senderId !== currentUser.id && isAppReady) {
+                                    hasNew = true;
+                                    latestMsgText = msg.type === 'text' ? msg.text : 'Прикрепленный файл';
+                                }
+                            }
+                        });
+                    }
+
+                    // Обновляем бейдж чата
+                    const badgeEl = document.getElementById(`badge-${userId}`);
+                    if (badgeEl) {
+                        badgeEl.innerText = unread;
+                        badgeEl.style.display = unread > 0 ? 'inline-block' : 'none';
+                    }
+
+                    if (hasNew) {
+                        // Звук если мы в сети и во вкладке
+                        if (document.visibilityState === 'visible') {
+                            notifyAudio.currentTime = 0;
+                            notifyAudio.play().catch(e => console.log('Audio Blocked:', e));
+                        }
+                        
+                        // Push Уведомление, если мы свернуты или в другом чате
+                        if (Notification.permission === 'granted' && (document.visibilityState !== 'visible' || activeChatId !== chatId)) {
+                            const senderName = allUsers[userId]?.name || 'Пользователь';
+                            new Notification(senderName, { body: latestMsgText, icon: 'icon.png' });
+                        }
+                    }
+                });
+            });
+        }
+
+        window.requestNotifyPerms = () => {
+            if ("Notification" in window) {
+                Notification.requestPermission().then(p => {
+                    if (p === "granted") alert("Уведомления включены!");
+                    else alert("Вы запретили уведомления в браузере.");
+                });
+            }
         }
 
         window.logout = () => {
@@ -513,7 +667,7 @@
             
             if(tempAvatarBase64) {
                 const pureBase64 = tempAvatarBase64.split(',')[1];
-                const avatarUrl = await uploadToGitHub(pureBase64, 'avatar.jpg');
+                const avatarUrl = await uploadFileToFirebase(pureBase64, 'avatar.jpg', 'image/jpeg');
                 if(avatarUrl) currentUser.avatarUrl = avatarUrl;
             }
             
@@ -566,7 +720,6 @@
             document.getElementById('view-' + viewName).classList.add('active');
         };
 
-        // ЛОГИКА ТЕЛЕГРАМА (ПРОФИЛИ): Показываем только тех, с кем общались
         window.renderUsersList = () => {
             const query = document.getElementById('search-input').value.toLowerCase().trim();
             const list = document.getElementById('chat-list');
@@ -577,11 +730,9 @@
             Object.values(allUsers).forEach(user => {
                 if (!user || !user.name || !user.id || user.id === currentUser.id) return; 
                 
-                // Если нет поиска, показываем ТОЛЬКО тех, кто есть в списке chats (кому мы писали или кто писал нам)
                 if (!query) {
                     if (!currentUser.chats || !currentUser.chats[user.id]) return;
                 } else {
-                    // При поиске ищем по всем
                     if (!user.name.toLowerCase().includes(query)) return;
                 }
 
@@ -590,12 +741,15 @@
                 const el = document.createElement('div');
                 el.className = `chat-item ${activeUserId === user.id ? 'active' : ''}`;
                 el.onclick = () => window.openChat(user);
+                
+                // ВАЖНО: Добавлена верстка бейджа с id badge-{user.id}
                 el.innerHTML = `
                     <div class="avatar" id="list-ava-${user.id}"></div>
                     <div class="chat-info">
                         <div class="chat-name">${user.name}</div>
                         <div class="chat-status">${statusStr}</div>
                     </div>
+                    <span id="badge-${user.id}" class="badge">0</span>
                 `;
                 list.appendChild(el);
                 renderAvatar(document.getElementById(`list-ava-${user.id}`), user);
@@ -603,12 +757,11 @@
 
             if(count === 0) {
                 list.innerHTML = `<div style="padding:24px; text-align:center; color:var(--text-muted); font-size:14px;">
-                    ${query ? 'Ничего не найдено' : 'У вас пока нет активных чатов. Воспользуйтесь поиском, чтобы найти собеседника.'}
+                    ${query ? 'Ничего не найдено' : 'Воспользуйтесь поиском, чтобы найти собеседника.'}
                 </div>`;
             }
         };
 
-        // Добавление в список контактов при отправке сообщения
         function addChatToProfile(targetId) {
             if (!currentUser.chats) currentUser.chats = {};
             if (!currentUser.chats[targetId]) {
@@ -630,7 +783,6 @@
             
             if (window.innerWidth <= 768) {
                 document.getElementById('chat-area').classList.add('active');
-                // Hardware Back Button на Android
                 history.pushState({chat: true}, 'Chat');
             }
             
@@ -638,11 +790,8 @@
             loadMessages();
         };
 
-        // Обработка кнопки назад (Android System Back)
         window.addEventListener('popstate', (e) => {
-            if(document.getElementById('chat-area').classList.contains('active')) {
-                window.closeChatMobile();
-            }
+            if(document.getElementById('chat-area').classList.contains('active')) window.closeChatMobile();
         });
 
         window.closeChatMobile = () => { 
@@ -656,26 +805,18 @@
             const container = document.getElementById('messages-container');
             
             onValue(msgsRef, (snapshot) => {
+                // Если мы в этом чате, отрисовываем его
+                if (!activeChatId) return;
+                
                 container.innerHTML = '';
                 const data = snapshot.val();
                 if (!data) return;
 
-                let updatesNeeded = {};
-
                 Object.keys(data).forEach(key => {
                     const msg = data[key];
                     msg.firebaseKey = key;
-
-                    if (msg.senderId !== currentUser.id && msg.status === 'sent') {
-                        updatesNeeded[`messages/${activeChatId}/${key}/status`] = 'read';
-                    }
-
                     renderSingleMessage(msg, container);
                 });
-
-                if(Object.keys(updatesNeeded).length > 0) {
-                    update(ref(db), updatesNeeded);
-                }
 
                 container.scrollTop = container.scrollHeight;
             });
@@ -712,7 +853,6 @@
                 contentHTML += `<div class="msg-audio"><span class="icon" style="color: ${isMe ? 'white' : 'var(--accent)'}; font-size:28px;">mic</span><audio controls src="${msg.url}" controlsList="nodownload noplaybackrate"></audio></div>`;
             }
 
-            // ИСПРАВЛЕННЫЕ ГАЛОЧКИ
             let statusHTML = '';
             if(isMe) {
                 const isRead = msg.status === 'read';
@@ -738,12 +878,13 @@
             const text = input.value.trim();
             if (!text || !activeChatId) return;
             
-            push(ref(db, 'messages/' + activeChatId), { senderId: currentUser.id, type: 'text', text: text, time: getFormattedTime(), status: 'sent' });
+            push(ref(db, 'messages/' + activeChatId), { 
+                senderId: currentUser.id, type: 'text', text: text, 
+                time: getFormattedTime(), timestamp: Date.now(), status: 'sent' 
+            });
             
             input.value = ''; 
             input.style.height = 'auto'; 
-            
-            // Фикс бага микрофона
             window.resetInputUI();
             addChatToProfile(activeUserId);
         };
@@ -775,12 +916,12 @@
                 if (file.type.startsWith('image/')) type = 'image';
                 else if (file.type.startsWith('video/')) type = 'video';
                 
-                const ghUrl = await uploadToGitHub(pureBase64, file.name);
-                if(ghUrl) {
+                const cloudUrl = await uploadFileToFirebase(pureBase64, file.name, file.type);
+                if(cloudUrl) {
                     push(ref(db, 'messages/' + activeChatId), { 
-                        senderId: currentUser.id, type: type, url: ghUrl, 
+                        senderId: currentUser.id, type: type, url: cloudUrl, 
                         fileName: file.name, fileSize: (file.size / 1024).toFixed(1) + ' KB', 
-                        time: getFormattedTime(), status: 'sent' 
+                        time: getFormattedTime(), timestamp: Date.now(), status: 'sent' 
                     });
                     addChatToProfile(activeUserId);
                 }
@@ -789,6 +930,7 @@
             e.target.value = '';
         };
 
+        let isRecording = false, mediaRecorder, audioChunks = [];
         window.startVoice = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -799,9 +941,12 @@
                     const reader = new FileReader();
                     reader.onloadend = async () => {
                         const pureBase64 = reader.result.split(',')[1];
-                        const ghUrl = await uploadToGitHub(pureBase64, 'voice.webm');
-                        if(ghUrl) {
-                            push(ref(db, 'messages/' + activeChatId), { senderId: currentUser.id, type: 'voice', url: ghUrl, time: getFormattedTime(), status: 'sent' });
+                        const cloudUrl = await uploadFileToFirebase(pureBase64, 'voice.webm', 'audio/webm');
+                        if(cloudUrl) {
+                            push(ref(db, 'messages/' + activeChatId), { 
+                                senderId: currentUser.id, type: 'voice', url: cloudUrl, 
+                                time: getFormattedTime(), timestamp: Date.now(), status: 'sent' 
+                            });
                             addChatToProfile(activeUserId);
                         }
                     };
