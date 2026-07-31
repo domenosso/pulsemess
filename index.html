@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
 
     <style>
-        /* === КАСТОМНЫЕ СТИЛИ (ОТКЛЮЧЕНИЕ СТАНДАРТОВ БРАУЗЕРА) === */
+        /* === КАСТОМНЫЕ СТИЛИ === */
         * {
             box-sizing: border-box; margin: 0; padding: 0;
             -webkit-tap-highlight-color: transparent;
@@ -89,7 +89,6 @@
             --shadow-lg: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
         }
 
-        /* Глубокий Blur и окантовки */
         body[data-glass="true"] #app-screen, body[data-glass="true"] .auth-card,
         body[data-glass="true"] #main-nav, body[data-glass="true"] .view-section,
         body[data-glass="true"] .chat-header, body[data-glass="true"] .chat-input-area,
@@ -198,10 +197,15 @@
         .btn-mic { background: #34c759; color: white; }
 
         /* ОВЕРЛЕИ И КАСТОМНЫЕ МОДАЛКИ (АЛЕРТЫ) */
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; backdrop-filter: blur(10px); }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; backdrop-filter: blur(10px); }
         .overlay.active { opacity: 1; pointer-events: auto; }
         
-        /* Модальные окна (Кастомные alert и confirm) */
+        /* ИСПРАВЛЕНИЕ: Окно Alert теперь ВСЕГДА ПОВЕРХ ЗАГРУЗКИ */
+        #custom-alert-overlay { z-index: 10000 !important; }
+        #loader-overlay { z-index: 9999; flex-direction: column; color: white; font-weight: 600; }
+        #viewer-overlay { z-index: 200; }
+        #pwa-modal { z-index: 200; }
+
         .custom-modal { background: var(--bg-panel); padding: 30px; border-radius: 24px; text-align: center; max-width: 320px; width: 90%; box-shadow: var(--shadow-lg); animation: popIn 0.3s ease-out; position: relative; }
         .custom-modal h2 { font-size: 18px; margin-bottom: 12px; font-weight: 700; }
         .custom-modal p { font-size: 15px; color: var(--text-muted); line-height: 1.5; margin-bottom: 24px; }
@@ -214,7 +218,6 @@
         .menu-item { display: flex; align-items: center; gap: 16px; padding: 14px 16px; font-size: 16px; cursor: pointer; border-radius: 16px; }
         .menu-item:hover { background: var(--bg-input); }
 
-        #loader-overlay { background: rgba(0,0,0,0.8); flex-direction: column; color: white; font-weight: 600; z-index: 9999; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -239,7 +242,7 @@
     </div>
 
     <!-- КАСТОМНЫЕ АЛЕРТЫ И CONFIRM -->
-    <div id="custom-alert-overlay" class="overlay" style="z-index: 300;">
+    <div id="custom-alert-overlay" class="overlay">
         <div class="custom-modal">
             <h2 id="custom-alert-title">Уведомление</h2>
             <p id="custom-alert-text">Текст</p>
@@ -267,8 +270,10 @@
             <h1 id="auth-title" style="text-align: center; margin-bottom: 20px; font-weight: 700;">Nano</h1>
             
             <div class="avatar-upload-circle" id="auth-avatar-preview" onclick="document.getElementById('auth-avatar-input').click()">
-                <span class="icon" style="font-size: 32px;">add_a_photo</span>
-                <span class="overlay-text">Аватар</span>
+                <div id="auth-avatar-inner" style="display:flex; flex-direction:column; align-items:center;">
+                    <span class="icon" style="font-size: 32px;">add_a_photo</span>
+                    <span class="overlay-text">Аватар</span>
+                </div>
             </div>
             <input type="file" id="auth-avatar-input" hidden accept="image/*" onchange="window.handleAvatarSelect(event, 'auth-avatar-preview')">
             
@@ -443,7 +448,7 @@
         let isAppReady = false; 
         const notifyAudio = document.getElementById('notify-sound');
 
-        // === КАСТОМНЫЕ УВЕДОМЛЕНИЯ ===
+        // === КАСТОМНЫЕ УВЕДОМЛЕНИЯ (ИСПРАВЛЕНЫ) ===
         let alertResolve = null;
         window.customAlert = (msg, isConfirm = false) => {
             return new Promise(resolve => {
@@ -458,9 +463,8 @@
             if(alertResolve) alertResolve(res);
         };
 
-        // ЗАГРУЗКА В GITHUB (Строго по вашей инструкции)
+        // ЗАГРУЗКА В GITHUB (Защищена от зависаний)
         async function uploadToGitHub(base64Data, filename) {
-            document.getElementById('loader-overlay').classList.add('active');
             try {
                 const safeName = Date.now() + '_' + filename.replace(/[^a-zA-Z0-9.]/g, '_');
                 const url = `https://api.github.com/repos/${GH_REPO}/contents/uploads/${safeName}`;
@@ -473,10 +477,10 @@
                 const data = await response.json();
                 return data.content.download_url;
             } catch (e) {
-                await window.customAlert('Ошибка загрузки файла на облако GitHub. Проверьте актуальность токена.');
+                console.error("GH Error:", e);
+                // Продолжаем без блокировки, просто вернем null
+                window.customAlert('Ошибка облака GitHub. Токен неактивен, файл не загружен, но продолжаем работу.');
                 return null;
-            } finally {
-                document.getElementById('loader-overlay').classList.remove('active');
             }
         }
 
@@ -518,39 +522,59 @@
             document.getElementById('auth-avatar-preview').style.display = isLoginMode ? 'none' : 'flex';
         };
 
+        // ИСПРАВЛЕННАЯ ЛОГИКА РЕГИСТРАЦИИ (БЕЗ ЗАВИСАНИЙ)
         window.submitAuth = async () => {
             const name = document.getElementById('auth-name').value.trim();
             const pass = document.getElementById('auth-pass').value.trim();
             if(!name || !pass) return window.customAlert('Введите логин и пароль');
             
             document.getElementById('loader-overlay').classList.add('active');
+            
             try {
                 const snapshot = await get(ref(db, 'users'));
                 const users = snapshot.val() || {};
                 const existingUserKey = Object.keys(users).find(key => users[key].name && users[key].name.toLowerCase() === name.toLowerCase());
                 
                 if (isLoginMode) {
-                    if (!existingUserKey) return window.customAlert('Пользователь не найден!');
-                    if (users[existingUserKey].password !== pass) return window.customAlert('Неверный пароль!');
+                    if (!existingUserKey) {
+                        document.getElementById('loader-overlay').classList.remove('active');
+                        return window.customAlert('Пользователь не найден!');
+                    }
+                    if (users[existingUserKey].password !== pass) {
+                        document.getElementById('loader-overlay').classList.remove('active');
+                        return window.customAlert('Неверный пароль!');
+                    }
                     currentUser = users[existingUserKey];
                 } else {
-                    if (existingUserKey) return window.customAlert('Логин уже занят!');
+                    if (existingUserKey) {
+                        document.getElementById('loader-overlay').classList.remove('active');
+                        return window.customAlert('Логин уже занят!');
+                    }
+                    
                     let avatarUrl = null;
                     if (tempAvatarBase64) {
                         const pureBase64 = tempAvatarBase64.split(',')[1];
                         avatarUrl = await uploadToGitHub(pureBase64, 'avatar.jpg');
                     }
+                    
                     const userId = 'user_' + Date.now();
                     currentUser = { id: userId, name: name, password: pass, avatarUrl: avatarUrl, color: '#007aff', isOnline: true, chats: {} };
                     await set(ref(db, 'users/' + userId), currentUser);
                 }
                 
                 localStorage.setItem('nano_user', JSON.stringify({id: currentUser.id, name: currentUser.name, avatarUrl: currentUser.avatarUrl, color: currentUser.color, chats: currentUser.chats || {}}));
+                
+                document.getElementById('loader-overlay').classList.remove('active');
+                
                 showApp();
                 setupPresence();
                 window.requestNotifyPerms();
-            } catch (e) { window.customAlert('Ошибка связи с сервером БД'); } 
-            finally { document.getElementById('loader-overlay').classList.remove('active'); }
+                
+            } catch (e) { 
+                document.getElementById('loader-overlay').classList.remove('active');
+                console.error(e);
+                window.customAlert('Ошибка связи с сервером. Проверьте: Разрешены ли правила БД (rules) в Firebase? Детали: ' + e.message); 
+            }
         };
 
         function setupPresence() {
@@ -627,9 +651,12 @@
 
         window.requestNotifyPerms = async () => {
             if ("Notification" in window) {
-                const p = await Notification.requestPermission();
-                if (p === "granted") window.customAlert("Уведомления включены!");
-                else window.customAlert("Вы запретили уведомления в браузере.");
+                try {
+                    const p = await Notification.requestPermission();
+                    if (p === "granted") window.customAlert("Уведомления включены!");
+                } catch (e) {
+                    console.log("Уведомления не поддерживаются в этой среде");
+                }
             }
         }
 
@@ -645,6 +672,8 @@
             const newName = document.getElementById('profile-name-input').value.trim();
             if(newName) currentUser.name = newName;
             
+            document.getElementById('loader-overlay').classList.add('active');
+            
             if(tempAvatarBase64) {
                 const pureBase64 = tempAvatarBase64.split(',')[1];
                 const avatarUrl = await uploadToGitHub(pureBase64, 'avatar.jpg');
@@ -654,6 +683,8 @@
             update(ref(db, 'users/' + currentUser.id), { name: currentUser.name, avatarUrl: currentUser.avatarUrl || null });
             localStorage.setItem('nano_user', JSON.stringify(currentUser));
             document.getElementById('profile-name-display').innerText = currentUser.name;
+            
+            document.getElementById('loader-overlay').classList.remove('active');
             window.customAlert('Профиль обновлен!');
             tempAvatarBase64 = null;
         };
@@ -674,7 +705,11 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, w, h);
                     tempAvatarBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                    
                     document.getElementById(previewId).style.backgroundImage = `url(${tempAvatarBase64})`;
+                    
+                    const innerText = document.getElementById('auth-avatar-inner');
+                    if (innerText) innerText.style.display = 'none';
                 };
                 img.src = e.target.result;
             };
@@ -880,6 +915,7 @@
             const file = e.target.files[0];
             if(!file || !activeChatId) return;
             
+            document.getElementById('loader-overlay').classList.add('active');
             const reader = new FileReader();
             reader.onload = async (ev) => {
                 const pureBase64 = ev.target.result.split(',')[1];
@@ -888,6 +924,8 @@
                 else if (file.type.startsWith('video/')) type = 'video';
                 
                 const cloudUrl = await uploadToGitHub(pureBase64, file.name);
+                document.getElementById('loader-overlay').classList.remove('active');
+                
                 if(cloudUrl) {
                     push(ref(db, 'messages/' + activeChatId), { 
                         senderId: currentUser.id, type: type, url: cloudUrl, 
@@ -912,7 +950,9 @@
                     const reader = new FileReader();
                     reader.onloadend = async () => {
                         const pureBase64 = reader.result.split(',')[1];
+                        document.getElementById('loader-overlay').classList.add('active');
                         const cloudUrl = await uploadToGitHub(pureBase64, 'voice.webm');
+                        document.getElementById('loader-overlay').classList.remove('active');
                         if(cloudUrl) {
                             push(ref(db, 'messages/' + activeChatId), { 
                                 senderId: currentUser.id, type: 'voice', url: cloudUrl, 
