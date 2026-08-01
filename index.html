@@ -66,7 +66,7 @@
 
         body[data-glass="true"] #app-screen, body[data-glass="true"] .auth-card, body[data-glass="true"] #main-nav, 
         body[data-glass="true"] .view-section, body[data-glass="true"] .chat-header, body[data-glass="true"] .chat-input-area,
-        body[data-glass="true"] .action-bar, body[data-glass="true"] .bottom-sheet, body[data-glass="true"] .custom-modal {
+        body[data-glass="true"] .action-bar, body[data-glass="true"] .custom-modal, body[data-glass="true"] .message-popover {
             backdrop-filter: blur(60px) saturate(220%); -webkit-backdrop-filter: blur(60px) saturate(220%);
             border: 1px solid var(--border); box-shadow: var(--shadow-lg);
         }
@@ -143,14 +143,19 @@
         .msg-media { max-width: 100%; border-radius: 12px; cursor: pointer; margin-bottom: 4px; object-fit: cover; max-height: 300px; }
         .msg-doc { display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 12px; cursor: pointer; }
         body[data-glass="true"] .msg-doc { background: rgba(255,255,255,0.2); }
-        .msg-audio { margin-top: 4px; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.05); padding: 6px 12px; border-radius: 20px; }
-        .msg-audio audio { height: 36px; width: 220px; border-radius: 18px; outline: none; }
+        
+        /* НОВЫЙ КАСТОМНЫЙ ПЛЕЕР ДЛЯ ГС (Как в Telegram) */
+        .custom-voice-msg { display: flex; align-items: center; gap: 10px; padding: 4px; width: 220px; }
+        .voice-play-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; }
+        .message.outgoing .voice-play-btn { background: white; color: var(--accent); }
+        .voice-track { flex: 1; height: 20px; position: relative; display: flex; align-items: center; cursor: pointer; }
+        .voice-wave { position: absolute; width: 100%; height: 12px; background: repeating-linear-gradient(90deg, currentColor 0, currentColor 3px, transparent 3px, transparent 5px); opacity: 0.3; border-radius: 6px; }
+        .voice-progress-fill { position: absolute; left: 0; top: 50%; transform: translateY(-50%); height: 12px; width: 0%; background: repeating-linear-gradient(90deg, currentColor 0, currentColor 3px, transparent 3px, transparent 5px); border-radius: 6px; overflow: hidden; pointer-events: none; transition: width 0.1s linear; }
         
         .msg-meta { display: flex; align-items: center; gap: 4px; font-size: 11px; margin-top: 4px; justify-content: flex-end; opacity: 0.9; }
         .tick-icon { font-size: 16px !important; margin-left: -2px; }
         .tick-icon.sent { color: rgba(255, 255, 255, 0.6); } .tick-icon.read { color: #ffffff; }
 
-        /* ВЛОЖЕННЫЕ СООБЩЕНИЯ (ОТВЕТЫ) И РЕАКЦИИ */
         .reply-block { background: rgba(0,0,0,0.05); border-left: 3px solid var(--accent); padding: 6px 10px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; cursor: pointer; transition: 0.2s; }
         .reply-block:hover { filter: brightness(0.95); }
         body[data-glass="true"] .reply-block { background: rgba(255,255,255,0.2); }
@@ -159,7 +164,6 @@
         .msg-reaction { background: var(--bg-input); color: var(--text-main); font-size: 13px; padding: 4px 8px; border-radius: 12px; border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 4px; cursor: pointer; box-shadow: var(--shadow-sm); }
         .message.outgoing .msg-reaction { background: rgba(255,255,255,0.2); border: none; color: white; }
 
-        /* ПАНЕЛЬ ОТВЕТА/РЕДАКТИРОВАНИЯ */
         .action-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; background: var(--glass-bg); border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); z-index: 10; }
         .action-bar-content { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 10px; border-left: 3px solid var(--accent); margin-left: 4px; padding-left: 10px; }
 
@@ -186,15 +190,28 @@
         .viewer-content { max-width: 90%; max-height: 80vh; display: flex; flex-direction: column; align-items: center; gap: 20px; color: white; }
         .viewer-content img, .viewer-content video { max-width: 100%; max-height: 70vh; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
         
-        /* BOTTOM SHEET (МЕНЮ СООБЩЕНИЙ) */
-        .bottom-sheet { position: absolute; bottom: -100%; left: 0; width: 100%; background: var(--bg-panel); border-radius: 24px 24px 0 0; padding: 24px 16px; transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 201; box-shadow: var(--shadow-lg); }
-        .bottom-sheet.active { bottom: 0; }
-        .menu-item { display: flex; align-items: center; gap: 16px; padding: 14px 16px; font-size: 16px; cursor: pointer; border-radius: 16px; font-weight: 500; }
-        .menu-item:hover { background: var(--bg-input); }
+        /* === ВСПЛЫВАЮЩЕЕ МЕНЮ СООБЩЕНИЙ (POPOVER) === */
+        .message-popover-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 500; display: none; background: transparent; }
+        .message-popover-overlay.active { display: block; }
+
+        .message-popover {
+            position: absolute; background: var(--bg-panel); border: 1px solid var(--border);
+            border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 8px;
+            min-width: 220px; z-index: 501;
+            animation: popScale 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        body[data-glass="true"] .message-popover {
+            backdrop-filter: blur(60px) saturate(220%); -webkit-backdrop-filter: blur(60px) saturate(220%);
+            background: var(--glass-bg);
+        }
+        @keyframes popScale { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
+
+        .popover-menu-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; font-size: 15px; cursor: pointer; border-radius: 10px; font-weight: 500; }
+        .popover-menu-item:hover { background: var(--bg-hover); }
         
-        .reactions-row { display: flex; justify-content: space-around; padding-bottom: 16px; margin-bottom: 10px; border-bottom: 1px solid var(--border); }
-        .reaction-btn { font-size: 30px; cursor: pointer; transition: transform 0.2s; }
-        .reaction-btn:active { transform: scale(1.3); }
+        .popover-reactions { display: flex; justify-content: space-around; padding: 6px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+        .popover-reaction-btn { font-size: 24px; cursor: pointer; transition: transform 0.2s; }
+        .popover-reaction-btn:hover { transform: scale(1.2); }
 
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -384,23 +401,21 @@
         </div>
     </div>
 
-    <!-- МЕНЮ ДЕЙСТВИЙ С СООБЩЕНИЕМ -->
-    <div id="bottom-sheet-overlay" class="overlay" onclick="window.closeBottomSheet()">
-        <div id="bottom-sheet" class="bottom-sheet" onclick="event.stopPropagation()">
-            <div style="width: 40px; height: 5px; background: var(--border); border-radius: 5px; margin: 0 auto 10px auto;"></div>
-            
-            <div class="reactions-row">
-                <span class="reaction-btn" onclick="window.addReaction('👍')">👍</span>
-                <span class="reaction-btn" onclick="window.addReaction('❤️')">❤️</span>
-                <span class="reaction-btn" onclick="window.addReaction('😂')">😂</span>
-                <span class="reaction-btn" onclick="window.addReaction('😮')">😮</span>
-                <span class="reaction-btn" onclick="window.addReaction('😢')">😢</span>
+    <!-- ВСПЛЫВАЮЩЕЕ МЕНЮ ДЕЙСТВИЙ (POPOVER) -->
+    <div id="message-popover-overlay" class="message-popover-overlay" onclick="window.closePopoverMenu()">
+        <div id="message-popover" class="message-popover" onclick="event.stopPropagation()">
+            <div class="popover-reactions">
+                <span class="popover-reaction-btn" onclick="window.addReaction('👍')">👍</span>
+                <span class="popover-reaction-btn" onclick="window.addReaction('❤️')">❤️</span>
+                <span class="popover-reaction-btn" onclick="window.addReaction('😂')">😂</span>
+                <span class="popover-reaction-btn" onclick="window.addReaction('😮')">😮</span>
+                <span class="popover-reaction-btn" onclick="window.addReaction('😢')">😢</span>
             </div>
             
-            <div id="bs-reply" class="menu-item" onclick="window.execAction('reply')"><span class="icon">reply</span> Ответить</div>
-            <div id="bs-edit" class="menu-item" onclick="window.execAction('edit')"><span class="icon">edit</span> Изменить</div>
-            <div id="bs-copy" class="menu-item" onclick="window.execAction('copy')"><span class="icon">content_copy</span> Копировать</div>
-            <div id="bs-delete" class="menu-item" style="color: #ff3b30;" onclick="window.execAction('delete')"><span class="icon">delete</span> Удалить</div>
+            <div id="pop-reply" class="popover-menu-item" onclick="window.execAction('reply')"><span class="icon">reply</span> Ответить</div>
+            <div id="pop-edit" class="popover-menu-item" onclick="window.execAction('edit')"><span class="icon">edit</span> Изменить</div>
+            <div id="pop-copy" class="popover-menu-item" onclick="window.execAction('copy')"><span class="icon">content_copy</span> Копировать</div>
+            <div id="pop-delete" class="popover-menu-item" style="color: #ff3b30;" onclick="window.execAction('delete')"><span class="icon">delete</span> Удалить</div>
         </div>
     </div>
 
@@ -420,17 +435,14 @@
         const db = getDatabase(app);
         const GH_REPO = "domenosso/nano-mess-cloud";
 
-        // === ОБЯЗАТЕЛЬНЫЕ ПЕРЕМЕННЫЕ ===
         let currentUser = null;
         let allUsers = {};
         let activeChatId = null;
         let activeUserId = null;
         
-        // Переменные для функций (важно!)
         let tempAvatarBase64 = null; 
         let isLoginMode = false;
         
-        // Для действий (редактирование/ответы)
         let actionMsg = null;
         let activeAction = null; 
         
@@ -439,6 +451,10 @@
         let isAppReady = false; 
         const notifyAudio = document.getElementById('notify-sound');
         let cachedGitKey = null;
+        
+        // Кастомный плеер ГС
+        window.activeAudio = null;
+        window.activeAudioElement = null;
 
         let alertResolve = null;
         window.customAlert = (title, msg, isConfirm = false) => {
@@ -615,12 +631,18 @@
 
             onValue(ref(db, 'users'), snapshot => {
                 allUsers = snapshot.val() || {};
-                if(allUsers[currentUser.id]) currentUser.chats = allUsers[currentUser.id].chats || {};
+                
+                // Мгновенное обновление аватарок у нас
+                if(allUsers[currentUser.id]) {
+                    currentUser.name = allUsers[currentUser.id].name;
+                    currentUser.avatarUrl = allUsers[currentUser.id].avatarUrl;
+                    currentUser.chats = allUsers[currentUser.id].chats || {};
+                }
                 
                 window.renderUsersList();
                 watchAllMyChats(); 
                 
-                // МГНОВЕННОЕ ОБНОВЛЕНИЕ ШАПКИ АКТИВНОГО ЧАТА
+                // МГНОВЕННОЕ ОБНОВЛЕНИЕ ШАПКИ АКТИВНОГО ЧАТА (Имя и Фото собеседника)
                 if (activeUserId && allUsers[activeUserId]) {
                     const u = allUsers[activeUserId];
                     document.getElementById('active-chat-name').innerText = u.name;
@@ -651,7 +673,7 @@
                             if (!knownMessages.has(key)) {
                                 knownMessages.add(key);
                                 if (msg.senderId !== currentUser.id && isAppReady) {
-                                    hasNew = true; latestMsgText = msg.type === 'text' ? msg.text : 'Файл';
+                                    hasNew = true; latestMsgText = msg.type === 'text' ? msg.text : 'Файл/ГС';
                                 }
                             }
                         });
@@ -701,6 +723,7 @@
                 if(avatarUrl) currentUser.avatarUrl = avatarUrl;
             }
             
+            // Сохраняем в БД, это мгновенно обновит UI у всех благодаря onValue
             update(ref(db, 'users/' + currentUser.id), { name: currentUser.name, avatarUrl: currentUser.avatarUrl || null });
             localStorage.setItem('nano_user', JSON.stringify(currentUser));
             document.getElementById('profile-name-display').innerText = currentUser.name;
@@ -840,7 +863,8 @@
             const bubble = document.createElement('div');
             bubble.className = `message ${isMe ? 'outgoing' : 'incoming'}`;
             
-            bubble.onclick = (e) => window.openBottomSheet(msg, isMe);
+            // ОТКРЫТИЕ POPOVER (ВМЕСТО БОТТОМ ШИТА)
+            bubble.onclick = (e) => window.openPopoverMenu(e, msg, isMe);
 
             let contentHTML = '';
 
@@ -864,7 +888,17 @@
                     </div>`;
             }
             else if (msg.type === 'voice') {
-                contentHTML += `<div class="msg-audio" onclick="event.stopPropagation()"><span class="icon" style="color: ${isMe ? 'white' : 'var(--accent)'}; font-size:28px;">mic</span><audio controls src="${msg.url}" controlsList="nodownload noplaybackrate"></audio></div>`;
+                // КАСТОМНЫЙ ПЛЕЕР ГС
+                contentHTML += `
+                <div class="custom-voice-msg" onclick="event.stopPropagation()">
+                    <div class="voice-play-btn" onclick="window.toggleAudio(this, '${msg.url}')">
+                        <span class="icon play-icon">play_arrow</span>
+                    </div>
+                    <div class="voice-track" onclick="window.seekAudio(event, this)">
+                        <div class="voice-wave"></div>
+                        <div class="voice-progress-fill"></div>
+                    </div>
+                </div>`;
             }
 
             if (msg.reactions) {
@@ -890,25 +924,102 @@
             container.appendChild(row);
         }
 
-        window.openBottomSheet = (msg, isMe) => {
+        // === ЛОГИКА КАСТОМНОГО АУДИО ===
+        window.toggleAudio = (btnElement, url) => {
+            const parent = btnElement.closest('.custom-voice-msg');
+            const icon = parent.querySelector('.play-icon');
+            const progress = parent.querySelector('.voice-progress-fill');
+
+            // Остановить предыдущее если играет другое
+            if (window.activeAudio && window.activeAudio.src !== url) {
+                window.activeAudio.pause();
+                if (window.activeAudioElement) {
+                    window.activeAudioElement.querySelector('.play-icon').innerText = 'play_arrow';
+                }
+            }
+
+            // Инициализация
+            if (!window.activeAudio || window.activeAudio.src !== url) {
+                window.activeAudio = new Audio(url);
+                window.activeAudioElement = parent;
+
+                window.activeAudio.ontimeupdate = () => {
+                    const perc = (window.activeAudio.currentTime / window.activeAudio.duration) * 100;
+                    progress.style.width = perc + '%';
+                };
+                window.activeAudio.onended = () => {
+                    icon.innerText = 'play_arrow';
+                    progress.style.width = '0%';
+                };
+            }
+
+            // Play / Pause
+            if (window.activeAudio.paused) {
+                window.activeAudio.play();
+                icon.innerText = 'pause';
+            } else {
+                window.activeAudio.pause();
+                icon.innerText = 'play_arrow';
+            }
+        };
+
+        window.seekAudio = (e, trackElement) => {
+            if (!window.activeAudio) return;
+            const parent = trackElement.closest('.custom-voice-msg');
+            if (window.activeAudioElement !== parent) return; // Игнор если тыкаем на неактивный трек
+
+            const rect = trackElement.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const percentage = clickX / rect.width;
+            
+            if (window.activeAudio.duration) {
+                window.activeAudio.currentTime = percentage * window.activeAudio.duration;
+            }
+        };
+
+        // === ЛОГИКА POPOVER МЕНЮ ===
+        window.openPopoverMenu = (e, msg, isMe) => {
+            e.stopPropagation();
             actionMsg = msg;
             
-            document.getElementById('bs-reply').style.display = 'flex';
-            document.getElementById('bs-edit').style.display = (isMe && msg.type === 'text') ? 'flex' : 'none';
-            document.getElementById('bs-copy').style.display = (msg.type === 'text') ? 'flex' : 'none';
-            document.getElementById('bs-delete').style.display = isMe ? 'flex' : 'none';
+            document.getElementById('pop-reply').style.display = 'flex';
+            document.getElementById('pop-edit').style.display = (isMe && msg.type === 'text') ? 'flex' : 'none';
+            document.getElementById('pop-copy').style.display = (msg.type === 'text') ? 'flex' : 'none';
+            document.getElementById('pop-delete').style.display = isMe ? 'flex' : 'none';
             
-            document.getElementById('bottom-sheet-overlay').classList.add('active');
-            setTimeout(() => document.getElementById('bottom-sheet').classList.add('active'), 10);
+            const overlay = document.getElementById('message-popover-overlay');
+            const popover = document.getElementById('message-popover');
+            overlay.classList.add('active');
+            
+            popover.style.top = '-1000px'; 
+            popover.style.left = '-1000px';
+            
+            requestAnimationFrame(() => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const popH = popover.offsetHeight;
+                const popW = popover.offsetWidth;
+
+                // Позиционируем прямо над сообщением
+                let top = rect.top - popH - 10;
+                let left = isMe ? rect.right - popW : rect.left;
+
+                // Если меню уходит за верхний край экрана - открываем под сообщением
+                if (top < 60) top = rect.bottom + 10;
+                // Если уходит за левый или правый край
+                if (left < 10) left = 10;
+                if (left + popW > window.innerWidth - 10) left = window.innerWidth - popW - 10;
+
+                popover.style.top = top + 'px';
+                popover.style.left = left + 'px';
+            });
         };
         
-        window.closeBottomSheet = () => {
-            document.getElementById('bottom-sheet').classList.remove('active');
-            setTimeout(() => document.getElementById('bottom-sheet-overlay').classList.remove('active'), 300);
+        window.closePopoverMenu = () => {
+            document.getElementById('message-popover-overlay').classList.remove('active');
         };
 
         window.execAction = (action) => {
-            window.closeBottomSheet();
+            window.closePopoverMenu();
             if (!activeChatId || !actionMsg) return;
 
             if (action === 'delete') {
@@ -945,7 +1056,7 @@
         };
 
         window.addReaction = (emoji, forceMsgId = null) => {
-            window.closeBottomSheet();
+            window.closePopoverMenu();
             const msgId = forceMsgId || (actionMsg ? actionMsg.firebaseKey : null);
             if(!activeChatId || !msgId) return;
             update(ref(db, `messages/${activeChatId}/${msgId}/reactions/${currentUser.id}`), emoji);
@@ -1072,9 +1183,6 @@
                 mediaRecorder.stream.getTracks().forEach(t => t.stop()); 
             }
         };
-
-        // Копирование теперь через отдельную функцию не нужно, но оставим для совместимости вызова
-        window.copyTextMobile = () => { window.execAction('copy'); };
 
         window.openViewer = (type, url, name) => {
             const body = document.getElementById('viewer-body');
