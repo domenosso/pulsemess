@@ -302,7 +302,6 @@
             <img src="icon.png" alt="Nano App" style="width: 80px; height: 80px; border-radius: 20px; margin-bottom: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);" onerror="this.style.display='none'">
             <h2>Установите Nano</h2>
             <p id="pwa-text">Установите приложение на главный экран для быстрой работы и уведомлений.</p>
-            <!-- Одиночная кнопка для установки -->
             <button id="pwa-install-btn" class="btn" style="width: 100%; margin-bottom: 10px;" onclick="window.installPWA()">Установить как PWA</button>
         </div>
     </div>
@@ -438,7 +437,7 @@
                         <div class="recording-wave-anim"><div></div><div></div><div></div><div></div><div></div></div>
                     </div>
                     
-                    <!-- Изменены обработчики, чтобы предотвратить двойное срабатывание и скачки секунд -->
+                    <!-- Обработчики записи ГС -->
                     <div id="btn-mic" class="circle-btn btn-mic" onmousedown="window.startVoice(event)" onmouseup="window.stopVoice(event)" ontouchstart="window.startVoice(event)" ontouchend="window.stopVoice(event)" oncontextmenu="return false;">
                         <span class="icon">mic</span>
                     </div>
@@ -480,20 +479,6 @@
             </div>
         </div>
     </div>
-
-    <!-- ДИНАМИЧЕСКИЙ SERVICE WORKER ДЛЯ PWA И ФОНА -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            const swCode = `
-                self.addEventListener('install', e => self.skipWaiting());
-                self.addEventListener('activate', e => self.clients.claim());
-                self.addEventListener('fetch', e => {});
-            `;
-            const blob = new Blob([swCode], { type: 'application/javascript' });
-            const swUrl = URL.createObjectURL(blob);
-            navigator.serviceWorker.register(swUrl).catch(console.error);
-        }
-    </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -745,7 +730,8 @@
             if (!currentUser.chats) currentUser.chats = {};
             if (!currentUser.chats[BOT_ID]) {
                 currentUser.chats[BOT_ID] = true;
-                update(ref(db, `users/${currentUser.id}/chats/${BOT_ID}`), true);
+                // ИСПРАВЛЕНО: использование set вместо update
+                set(ref(db, `users/${currentUser.id}/chats/${BOT_ID}`), true);
                 const botChatId = [currentUser.id, BOT_ID].sort().join('_');
                 push(ref(db, 'messages/' + botChatId), {
                     senderId: BOT_ID, type: 'text', text: 'Привет! Я встроенный бот "Скачать Yt Inst". Отправь мне ссылку на видео из YouTube или Instagram.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
