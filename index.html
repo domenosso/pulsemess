@@ -162,8 +162,10 @@
         body[data-glass="true"] .reply-block { background: rgba(255,255,255,0.2); }
         
         .msg-reactions { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
-        .msg-reaction { background: var(--bg-input); color: var(--text-main); font-size: 13px; padding: 4px 8px; border-radius: 12px; border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 4px; cursor: pointer; box-shadow: var(--shadow-sm); }
+        .msg-reaction { background: var(--bg-input); color: var(--text-main); font-size: 13px; padding: 4px 8px; border-radius: 12px; border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 4px; cursor: pointer; box-shadow: var(--shadow-sm); transition: 0.2s; }
+        .msg-reaction.active { border-color: var(--accent); background: rgba(0, 122, 255, 0.1); color: var(--accent); }
         .message.outgoing .msg-reaction { background: rgba(255,255,255,0.2); border: none; color: white; }
+        .message.outgoing .msg-reaction.active { background: rgba(255,255,255,0.5); }
 
         .action-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; background: var(--glass-bg); border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); z-index: 10; }
         .action-bar-content { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 10px; border-left: 3px solid var(--accent); margin-left: 4px; padding-left: 10px; }
@@ -191,7 +193,7 @@
         .viewer-content { max-width: 90%; max-height: 80vh; display: flex; flex-direction: column; align-items: center; gap: 20px; color: white; }
         .viewer-content img, .viewer-content video { max-width: 100%; max-height: 70vh; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
         
-        /* === НОВОЕ МЕНЮ (ФОКУС НА СООБЩЕНИИ) === */
+        /* === ВСПЛЫВАЮЩЕЕ МЕНЮ (BLUR CONTEXT MENU) === */
         .blur-context-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 1000;
             background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -219,12 +221,27 @@
         .duo-text { position: absolute; bottom: 15px; width: 100%; text-align: center; font-size: 11px; color: var(--text-muted); opacity: 0.5; cursor: pointer; transition: 0.2s; }
         .duo-text:hover { opacity: 1; color: var(--accent); }
 
+        /* ИСПРАВЛЕНИЕ АНИМАЦИЙ И НАЛОЖЕНИЙ ДЛЯ ANDROID/IOS */
         @media (max-width: 768px) {
             #main-nav { flex-direction: row; width: 100%; height: auto; position: absolute; bottom: 0; left: 0; justify-content: space-around; padding: 10px 0; padding-bottom: calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); border-right: none; }
             .nav-item { flex: 1; padding: 8px; }
             #views-container { max-width: 100%; height: calc(100% - 70px - env(safe-area-inset-bottom)); border-right: none; }
-            #chat-area { position: absolute; top: 0; left: 100%; width: 100%; height: 100%; transition: transform 0.35s cubic-bezier(0.3, 1, 0.3, 1); z-index: 50; }
-            #chat-area.active { transform: translateX(-100%); }
+            
+            /* ХАРДВЕРНОЕ УСКОРЕНИЕ И ПРЕДОТВРАЩЕНИЕ НАЛОЖЕНИЙ */
+            #chat-area { 
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+                transform: translateX(100%); 
+                transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1); 
+                z-index: 50; 
+                background-color: var(--bg-chat); /* Плотный фон, скрывающий список */
+            }
+            #chat-area.active { transform: translateX(0); }
+            
+            body[data-glass="true"] #chat-area {
+                background: var(--glass-bg);
+                backdrop-filter: blur(60px) saturate(220%); -webkit-backdrop-filter: blur(60px) saturate(220%);
+            }
+            
             .back-btn { display: flex; margin-left: -10px; }
             .message { max-width: 85%; }
         }
@@ -400,7 +417,7 @@
         </div>
     </div>
 
-    <!-- НОВОЕ: ВСПЛЫВАЮЩЕЕ МЕНЮ (BLUR CONTEXT MENU) -->
+    <!-- ВСПЛЫВАЮЩЕЕ МЕНЮ (BLUR CONTEXT MENU) -->
     <div id="blur-context-menu" class="blur-context-overlay" onclick="window.closeContextMenu()">
         <div class="context-wrapper" onclick="event.stopPropagation()">
             
@@ -412,7 +429,6 @@
                 <span class="context-reaction-btn" onclick="window.addReaction('😢')">😢</span>
             </div>
             
-            <!-- Здесь будет клон сообщения -->
             <div id="context-msg-clone" class="message"></div>
             
             <div class="context-actions">
@@ -454,11 +470,12 @@
         
         let chatListeners = {};
         let knownMessages = new Set();
+        let knownReactions = new Set(); 
+        
         let isAppReady = false; 
         const notifyAudio = document.getElementById('notify-sound');
         let cachedGitKey = null;
         
-        // Аудиоплеер
         window.activeAudio = null;
         window.activeAudioElement = null;
 
@@ -637,7 +654,6 @@
 
             onValue(ref(db, 'users'), snapshot => {
                 allUsers = snapshot.val() || {};
-                
                 if(allUsers[currentUser.id]) {
                     currentUser.name = allUsers[currentUser.id].name;
                     currentUser.avatarUrl = allUsers[currentUser.id].avatarUrl;
@@ -679,6 +695,25 @@
                                 if (msg.senderId !== currentUser.id && isAppReady) {
                                     hasNew = true; latestMsgText = msg.type === 'text' ? msg.text : 'Файл/ГС';
                                 }
+                            }
+                            
+                            // Уведомления о новых реакциях
+                            if (msg.reactions && msg.senderId === currentUser.id) {
+                                Object.entries(msg.reactions).forEach(([reactorId, emoji]) => {
+                                    if (reactorId !== currentUser.id) {
+                                        const rKey = `${key}_${reactorId}_${emoji}`;
+                                        if (!knownReactions.has(rKey)) {
+                                            knownReactions.add(rKey);
+                                            if (isAppReady) {
+                                                const reactorName = allUsers[reactorId]?.name || 'Пользователь';
+                                                if (document.visibilityState === 'visible') { notifyAudio.currentTime = 0; notifyAudio.play().catch(e => {}); }
+                                                if (Notification.permission === 'granted' && (document.visibilityState !== 'visible' || activeChatId !== chatId)) {
+                                                    new Notification('Новая реакция', { body: `${reactorName} отреагировал(а) ${emoji} на ваше сообщение`, icon: 'icon.png' });
+                                                }
+                                            }
+                                        }
+                                    }
+                                });
                             }
                         });
                     }
@@ -828,15 +863,41 @@
             document.getElementById('active-chat-name').innerText = user.name;
             document.getElementById('active-chat-status').innerHTML = user.isOnline ? '<span class="online-dot"></span> В сети' : 'Был(а) недавно';
             
-            if (window.innerWidth <= 768) { document.getElementById('chat-area').classList.add('active'); history.pushState({chat: true}, 'Chat'); }
+            // ИСПРАВЛЕННАЯ ЛОГИКА PUSH STATE ДЛЯ ANDROID/IOS
+            if (window.innerWidth <= 768) { 
+                document.getElementById('chat-area').classList.add('active'); 
+                history.pushState({chat: true}, 'Chat'); 
+            }
             
             window.renderUsersList();
             window.cancelMessageAction();
             loadMessages();
         };
 
-        window.addEventListener('popstate', (e) => { if(document.getElementById('chat-area').classList.contains('active')) window.closeChatMobile(); });
-        window.closeChatMobile = () => { document.getElementById('chat-area').classList.remove('active'); activeUserId = null; window.renderUsersList(); };
+        // ИСПРАВЛЕННАЯ СИНХРОНИЗАЦИЯ КНОПОК "НАЗАД"
+        window.addEventListener('popstate', (e) => { 
+            // Закрываем меню фокуса, если открыто
+            if (document.getElementById('blur-context-menu').classList.contains('active')) {
+                window.closeContextMenu();
+            }
+            // Закрываем сам чат
+            if(document.getElementById('chat-area').classList.contains('active')) {
+                document.getElementById('chat-area').classList.remove('active'); 
+                activeUserId = null; 
+                window.renderUsersList(); 
+            }
+        });
+
+        // Кнопка назад в интерфейсе теперь вызывает системную history.back()
+        window.closeChatMobile = () => { 
+            if (window.innerWidth <= 768) {
+                history.back(); 
+            } else {
+                document.getElementById('chat-area').classList.remove('active'); 
+                activeUserId = null; 
+                window.renderUsersList(); 
+            }
+        };
 
         function loadMessages() {
             const msgsRef = ref(db, 'messages/' + activeChatId);
@@ -851,13 +912,13 @@
                 Object.keys(data).forEach(key => {
                     const msg = data[key];
                     msg.firebaseKey = key;
-                    renderSingleMessage(msg, container);
+                    renderSingleMessage(msg, data, container);
                 });
                 container.scrollTop = container.scrollHeight;
             });
         }
 
-        function renderSingleMessage(msg, container) {
+        function renderSingleMessage(msg, allData, container) {
             const isMe = msg.senderId === currentUser.id;
             const row = document.createElement('div');
             row.id = 'msg-' + msg.firebaseKey;
@@ -865,16 +926,28 @@
             
             const bubble = document.createElement('div');
             bubble.className = `message ${isMe ? 'outgoing' : 'incoming'}`;
-            
-            // ОТКРЫТИЕ НОВОГО МЕНЮ ДЕЙСТВИЙ (IOS БЛЮР)
             bubble.onclick = function(e) { window.openContextMenu(msg, isMe, this); };
 
             let contentHTML = '';
 
+            // ДИНАМИЧЕСКИЙ ОТВЕТ С ПРОВЕРКОЙ НА УДАЛЕНИЕ И ИЗМЕНЕНИЕ
             if (msg.replyTo) {
-                contentHTML += `<div class="reply-block" onclick="event.stopPropagation(); document.getElementById('msg-${msg.replyTo.id}')?.scrollIntoView({behavior: 'smooth', block: 'center'})">
-                    <strong style="color: ${isMe ? 'rgba(255,255,255,0.9)' : 'var(--accent)'};">${msg.replyTo.senderName}</strong><br>
-                    <div style="opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">${msg.replyTo.text}</div>
+                const origMsg = allData[msg.replyTo.id];
+                let rText = "Сообщение удалено";
+                let rName = msg.replyTo.senderName;
+                let isDeleted = true;
+                
+                if (origMsg) {
+                    isDeleted = false;
+                    rName = origMsg.senderId === currentUser.id ? currentUser.name : (allUsers[origMsg.senderId]?.name || rName);
+                    if (origMsg.type === 'text') rText = origMsg.text;
+                    else if (origMsg.type === 'voice') rText = '🎤 Голосовое сообщение';
+                    else rText = '🖼 Медиафайл';
+                }
+                
+                contentHTML += `<div class="reply-block" onclick="event.stopPropagation(); document.getElementById('msg-${msg.replyTo.id}')?.scrollIntoView({behavior: 'smooth', block: 'center'})" style="${isDeleted ? 'opacity:0.5;' : ''}">
+                    <strong style="color: ${isMe ? 'rgba(255,255,255,0.9)' : 'var(--accent)'};">${rName}</strong><br>
+                    <div style="opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">${rText}</div>
                 </div>`;
             }
 
@@ -906,9 +979,11 @@
             if (msg.reactions) {
                 const counts = {};
                 Object.values(msg.reactions).forEach(emoji => { counts[emoji] = (counts[emoji] || 0) + 1; });
+                
                 contentHTML += '<div class="msg-reactions">';
                 Object.keys(counts).forEach(emoji => {
-                    contentHTML += `<span class="msg-reaction" onclick="event.stopPropagation(); window.addReaction('${emoji}', '${msg.firebaseKey}')">${emoji} ${counts[emoji] > 1 ? counts[emoji] : ''}</span>`;
+                    const isMyReaction = msg.reactions[currentUser.id] === emoji;
+                    contentHTML += `<span class="msg-reaction ${isMyReaction ? 'active' : ''}" onclick="event.stopPropagation(); window.addReaction('${emoji}', '${msg.firebaseKey}')">${emoji} ${counts[emoji] > 1 ? counts[emoji] : ''}</span>`;
                 });
                 contentHTML += '</div>';
             }
@@ -926,7 +1001,7 @@
             container.appendChild(row);
         }
 
-        // === АУДИОПЛЕЕР ===
+        // АУДИОПЛЕЕР
         window.toggleAudio = (btnElement, url) => {
             const parent = btnElement.closest('.custom-voice-msg');
             const icon = parent.querySelector('.play-icon');
@@ -957,22 +1032,19 @@
             if (window.activeAudio.duration) window.activeAudio.currentTime = percentage * window.activeAudio.duration;
         };
 
-        // === НОВОЕ МЕНЮ СООБЩЕНИЯ С РАЗМЫТИЕМ ===
+        // ВСПЛЫВАЮЩЕЕ МЕНЮ (ФОКУС НА СООБЩЕНИИ)
         window.openContextMenu = (msg, isMe, bubbleEl) => {
             actionMsg = msg;
             
-            // Настройка отображения кнопок
             document.getElementById('ctx-reply').style.display = 'flex';
             document.getElementById('ctx-edit').style.display = (isMe && msg.type === 'text') ? 'flex' : 'none';
             document.getElementById('ctx-copy').style.display = (msg.type === 'text') ? 'flex' : 'none';
             document.getElementById('ctx-delete').style.display = isMe ? 'flex' : 'none';
             
-            // Клонирование сообщения в центр экрана
             const clone = document.getElementById('context-msg-clone');
-            clone.className = bubbleEl.className; // Копируем стили (синий/белый)
+            clone.className = bubbleEl.className;
             clone.innerHTML = bubbleEl.innerHTML;
             
-            // Показываем меню
             document.getElementById('blur-context-menu').classList.add('active');
         };
 
@@ -1017,11 +1089,14 @@
             window.setupInputWatch();
         };
 
-        window.addReaction = (emoji, forceMsgId = null) => {
+        window.addReaction = async (emoji, forceMsgId = null) => {
             window.closeContextMenu();
             const msgId = forceMsgId || (actionMsg ? actionMsg.firebaseKey : null);
             if(!activeChatId || !msgId) return;
-            update(ref(db, `messages/${activeChatId}/${msgId}/reactions/${currentUser.id}`), emoji);
+            
+            const reactRef = ref(db, `messages/${activeChatId}/${msgId}/reactions/${currentUser.id}`);
+            const snap = await get(reactRef);
+            if (snap.val() === emoji) remove(reactRef); else set(reactRef, emoji);
         };
 
         window.resetInputUI = () => {
