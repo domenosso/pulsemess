@@ -66,9 +66,10 @@
 
         body[data-glass="true"] #app-screen, body[data-glass="true"] .auth-card, body[data-glass="true"] #main-nav, 
         body[data-glass="true"] .view-section, body[data-glass="true"] .chat-header, body[data-glass="true"] .chat-input-area,
-        body[data-glass="true"] .action-bar, body[data-glass="true"] .custom-modal, body[data-glass="true"] .message-popover {
+        body[data-glass="true"] .action-bar, body[data-glass="true"] .custom-modal, 
+        body[data-glass="true"] .context-actions, body[data-glass="true"] .context-reactions {
             backdrop-filter: blur(60px) saturate(220%); -webkit-backdrop-filter: blur(60px) saturate(220%);
-            border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border); box-shadow: var(--shadow-lg); background: var(--glass-bg);
         }
 
         body { background-color: var(--bg-main); color: var(--text-main); height: 100dvh; overflow: hidden; display: flex; justify-content: center; user-select: none; transition: 0.3s; }
@@ -144,7 +145,7 @@
         .msg-doc { display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 12px; cursor: pointer; }
         body[data-glass="true"] .msg-doc { background: rgba(255,255,255,0.2); }
         
-        /* НОВЫЙ КАСТОМНЫЙ ПЛЕЕР ДЛЯ ГС (Как в Telegram) */
+        /* ПЛЕЕР ГС */
         .custom-voice-msg { display: flex; align-items: center; gap: 10px; padding: 4px; width: 220px; }
         .voice-play-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; }
         .message.outgoing .voice-play-btn { background: white; color: var(--accent); }
@@ -190,28 +191,27 @@
         .viewer-content { max-width: 90%; max-height: 80vh; display: flex; flex-direction: column; align-items: center; gap: 20px; color: white; }
         .viewer-content img, .viewer-content video { max-width: 100%; max-height: 70vh; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
         
-        /* === ВСПЛЫВАЮЩЕЕ МЕНЮ СООБЩЕНИЙ (POPOVER) === */
-        .message-popover-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 500; display: none; background: transparent; }
-        .message-popover-overlay.active { display: block; }
-
-        .message-popover {
-            position: absolute; background: var(--bg-panel); border: 1px solid var(--border);
-            border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 8px;
-            min-width: 220px; z-index: 501;
-            animation: popScale 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        /* === НОВОЕ МЕНЮ (ФОКУС НА СООБЩЕНИИ) === */
+        .blur-context-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 1000;
+            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+            display: flex; align-items: center; justify-content: center;
         }
-        body[data-glass="true"] .message-popover {
-            backdrop-filter: blur(60px) saturate(220%); -webkit-backdrop-filter: blur(60px) saturate(220%);
-            background: var(--glass-bg);
-        }
-        @keyframes popScale { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
+        .blur-context-overlay.active { opacity: 1; pointer-events: auto; }
 
-        .popover-menu-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; font-size: 15px; cursor: pointer; border-radius: 10px; font-weight: 500; }
-        .popover-menu-item:hover { background: var(--bg-hover); }
+        .context-wrapper { display: flex; flex-direction: column; align-items: center; gap: 16px; max-width: 90vw; width: 340px; animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        .context-reactions { display: flex; background: var(--bg-panel); border-radius: 30px; padding: 10px 16px; gap: 14px; box-shadow: var(--shadow-lg); }
+        .context-reaction-btn { font-size: 28px; cursor: pointer; transition: transform 0.2s; }
+        .context-reaction-btn:hover { transform: scale(1.3); }
+
+        #context-msg-clone { max-width: 100%; pointer-events: none; width: 100%; }
         
-        .popover-reactions { display: flex; justify-content: space-around; padding: 6px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
-        .popover-reaction-btn { font-size: 24px; cursor: pointer; transition: transform 0.2s; }
-        .popover-reaction-btn:hover { transform: scale(1.2); }
+        .context-actions { background: var(--bg-panel); border-radius: 16px; width: 100%; overflow: hidden; box-shadow: var(--shadow-lg); }
+        .context-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; font-size: 16px; font-weight: 500; cursor: pointer; border-bottom: 1px solid var(--border); transition: 0.2s; }
+        .context-item:last-child { border-bottom: none; }
+        .context-item:hover { background: var(--bg-hover); }
 
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -365,7 +365,6 @@
 
                 <div id="messages-container" class="messages-container"></div>
 
-                <!-- Панель Редактирования / Ответа -->
                 <div id="action-bar" class="action-bar hidden">
                     <div id="action-bar-content" class="action-bar-content"></div>
                     <span class="icon btn-icon" style="padding: 4px; margin-left: 10px;" onclick="window.cancelMessageAction()">close</span>
@@ -390,7 +389,7 @@
         </main>
     </div>
 
-    <!-- Модалки -->
+    <!-- Модалка просмотра файлов -->
     <div id="viewer-overlay" class="overlay" onclick="window.closeViewer()">
         <div class="viewer-content" onclick="event.stopPropagation()">
             <div style="position: absolute; top: 0; left: 0; width: 100%; padding: 20px; display: flex; justify-content: flex-end;">
@@ -401,21 +400,28 @@
         </div>
     </div>
 
-    <!-- ВСПЛЫВАЮЩЕЕ МЕНЮ ДЕЙСТВИЙ (POPOVER) -->
-    <div id="message-popover-overlay" class="message-popover-overlay" onclick="window.closePopoverMenu()">
-        <div id="message-popover" class="message-popover" onclick="event.stopPropagation()">
-            <div class="popover-reactions">
-                <span class="popover-reaction-btn" onclick="window.addReaction('👍')">👍</span>
-                <span class="popover-reaction-btn" onclick="window.addReaction('❤️')">❤️</span>
-                <span class="popover-reaction-btn" onclick="window.addReaction('😂')">😂</span>
-                <span class="popover-reaction-btn" onclick="window.addReaction('😮')">😮</span>
-                <span class="popover-reaction-btn" onclick="window.addReaction('😢')">😢</span>
+    <!-- НОВОЕ: ВСПЛЫВАЮЩЕЕ МЕНЮ (BLUR CONTEXT MENU) -->
+    <div id="blur-context-menu" class="blur-context-overlay" onclick="window.closeContextMenu()">
+        <div class="context-wrapper" onclick="event.stopPropagation()">
+            
+            <div class="context-reactions">
+                <span class="context-reaction-btn" onclick="window.addReaction('👍')">👍</span>
+                <span class="context-reaction-btn" onclick="window.addReaction('❤️')">❤️</span>
+                <span class="context-reaction-btn" onclick="window.addReaction('😂')">😂</span>
+                <span class="context-reaction-btn" onclick="window.addReaction('😮')">😮</span>
+                <span class="context-reaction-btn" onclick="window.addReaction('😢')">😢</span>
             </div>
             
-            <div id="pop-reply" class="popover-menu-item" onclick="window.execAction('reply')"><span class="icon">reply</span> Ответить</div>
-            <div id="pop-edit" class="popover-menu-item" onclick="window.execAction('edit')"><span class="icon">edit</span> Изменить</div>
-            <div id="pop-copy" class="popover-menu-item" onclick="window.execAction('copy')"><span class="icon">content_copy</span> Копировать</div>
-            <div id="pop-delete" class="popover-menu-item" style="color: #ff3b30;" onclick="window.execAction('delete')"><span class="icon">delete</span> Удалить</div>
+            <!-- Здесь будет клон сообщения -->
+            <div id="context-msg-clone" class="message"></div>
+            
+            <div class="context-actions">
+                <div id="ctx-reply" class="context-item" onclick="window.execAction('reply')"><span class="icon">reply</span> Ответить</div>
+                <div id="ctx-edit" class="context-item" onclick="window.execAction('edit')"><span class="icon">edit</span> Изменить</div>
+                <div id="ctx-copy" class="context-item" onclick="window.execAction('copy')"><span class="icon">content_copy</span> Копировать</div>
+                <div id="ctx-delete" class="context-item" style="color: #ff3b30;" onclick="window.execAction('delete')"><span class="icon">delete</span> Удалить</div>
+            </div>
+
         </div>
     </div>
 
@@ -452,7 +458,7 @@
         const notifyAudio = document.getElementById('notify-sound');
         let cachedGitKey = null;
         
-        // Кастомный плеер ГС
+        // Аудиоплеер
         window.activeAudio = null;
         window.activeAudioElement = null;
 
@@ -632,7 +638,6 @@
             onValue(ref(db, 'users'), snapshot => {
                 allUsers = snapshot.val() || {};
                 
-                // Мгновенное обновление аватарок у нас
                 if(allUsers[currentUser.id]) {
                     currentUser.name = allUsers[currentUser.id].name;
                     currentUser.avatarUrl = allUsers[currentUser.id].avatarUrl;
@@ -642,7 +647,6 @@
                 window.renderUsersList();
                 watchAllMyChats(); 
                 
-                // МГНОВЕННОЕ ОБНОВЛЕНИЕ ШАПКИ АКТИВНОГО ЧАТА (Имя и Фото собеседника)
                 if (activeUserId && allUsers[activeUserId]) {
                     const u = allUsers[activeUserId];
                     document.getElementById('active-chat-name').innerText = u.name;
@@ -723,7 +727,6 @@
                 if(avatarUrl) currentUser.avatarUrl = avatarUrl;
             }
             
-            // Сохраняем в БД, это мгновенно обновит UI у всех благодаря onValue
             update(ref(db, 'users/' + currentUser.id), { name: currentUser.name, avatarUrl: currentUser.avatarUrl || null });
             localStorage.setItem('nano_user', JSON.stringify(currentUser));
             document.getElementById('profile-name-display').innerText = currentUser.name;
@@ -863,8 +866,8 @@
             const bubble = document.createElement('div');
             bubble.className = `message ${isMe ? 'outgoing' : 'incoming'}`;
             
-            // ОТКРЫТИЕ POPOVER (ВМЕСТО БОТТОМ ШИТА)
-            bubble.onclick = (e) => window.openPopoverMenu(e, msg, isMe);
+            // ОТКРЫТИЕ НОВОГО МЕНЮ ДЕЙСТВИЙ (IOS БЛЮР)
+            bubble.onclick = function(e) { window.openContextMenu(msg, isMe, this); };
 
             let contentHTML = '';
 
@@ -888,7 +891,6 @@
                     </div>`;
             }
             else if (msg.type === 'voice') {
-                // КАСТОМНЫЙ ПЛЕЕР ГС
                 contentHTML += `
                 <div class="custom-voice-msg" onclick="event.stopPropagation()">
                     <div class="voice-play-btn" onclick="window.toggleAudio(this, '${msg.url}')">
@@ -924,102 +926,62 @@
             container.appendChild(row);
         }
 
-        // === ЛОГИКА КАСТОМНОГО АУДИО ===
+        // === АУДИОПЛЕЕР ===
         window.toggleAudio = (btnElement, url) => {
             const parent = btnElement.closest('.custom-voice-msg');
             const icon = parent.querySelector('.play-icon');
             const progress = parent.querySelector('.voice-progress-fill');
 
-            // Остановить предыдущее если играет другое
             if (window.activeAudio && window.activeAudio.src !== url) {
                 window.activeAudio.pause();
-                if (window.activeAudioElement) {
-                    window.activeAudioElement.querySelector('.play-icon').innerText = 'play_arrow';
-                }
+                if (window.activeAudioElement) window.activeAudioElement.querySelector('.play-icon').innerText = 'play_arrow';
             }
 
-            // Инициализация
             if (!window.activeAudio || window.activeAudio.src !== url) {
                 window.activeAudio = new Audio(url);
                 window.activeAudioElement = parent;
-
-                window.activeAudio.ontimeupdate = () => {
-                    const perc = (window.activeAudio.currentTime / window.activeAudio.duration) * 100;
-                    progress.style.width = perc + '%';
-                };
-                window.activeAudio.onended = () => {
-                    icon.innerText = 'play_arrow';
-                    progress.style.width = '0%';
-                };
+                window.activeAudio.ontimeupdate = () => { progress.style.width = ((window.activeAudio.currentTime / window.activeAudio.duration) * 100) + '%'; };
+                window.activeAudio.onended = () => { icon.innerText = 'play_arrow'; progress.style.width = '0%'; };
             }
 
-            // Play / Pause
-            if (window.activeAudio.paused) {
-                window.activeAudio.play();
-                icon.innerText = 'pause';
-            } else {
-                window.activeAudio.pause();
-                icon.innerText = 'play_arrow';
-            }
+            if (window.activeAudio.paused) { window.activeAudio.play(); icon.innerText = 'pause'; } 
+            else { window.activeAudio.pause(); icon.innerText = 'play_arrow'; }
         };
 
         window.seekAudio = (e, trackElement) => {
             if (!window.activeAudio) return;
             const parent = trackElement.closest('.custom-voice-msg');
-            if (window.activeAudioElement !== parent) return; // Игнор если тыкаем на неактивный трек
-
+            if (window.activeAudioElement !== parent) return; 
             const rect = trackElement.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const percentage = clickX / rect.width;
-            
-            if (window.activeAudio.duration) {
-                window.activeAudio.currentTime = percentage * window.activeAudio.duration;
-            }
+            const percentage = (e.clientX - rect.left) / rect.width;
+            if (window.activeAudio.duration) window.activeAudio.currentTime = percentage * window.activeAudio.duration;
         };
 
-        // === ЛОГИКА POPOVER МЕНЮ ===
-        window.openPopoverMenu = (e, msg, isMe) => {
-            e.stopPropagation();
+        // === НОВОЕ МЕНЮ СООБЩЕНИЯ С РАЗМЫТИЕМ ===
+        window.openContextMenu = (msg, isMe, bubbleEl) => {
             actionMsg = msg;
             
-            document.getElementById('pop-reply').style.display = 'flex';
-            document.getElementById('pop-edit').style.display = (isMe && msg.type === 'text') ? 'flex' : 'none';
-            document.getElementById('pop-copy').style.display = (msg.type === 'text') ? 'flex' : 'none';
-            document.getElementById('pop-delete').style.display = isMe ? 'flex' : 'none';
+            // Настройка отображения кнопок
+            document.getElementById('ctx-reply').style.display = 'flex';
+            document.getElementById('ctx-edit').style.display = (isMe && msg.type === 'text') ? 'flex' : 'none';
+            document.getElementById('ctx-copy').style.display = (msg.type === 'text') ? 'flex' : 'none';
+            document.getElementById('ctx-delete').style.display = isMe ? 'flex' : 'none';
             
-            const overlay = document.getElementById('message-popover-overlay');
-            const popover = document.getElementById('message-popover');
-            overlay.classList.add('active');
+            // Клонирование сообщения в центр экрана
+            const clone = document.getElementById('context-msg-clone');
+            clone.className = bubbleEl.className; // Копируем стили (синий/белый)
+            clone.innerHTML = bubbleEl.innerHTML;
             
-            popover.style.top = '-1000px'; 
-            popover.style.left = '-1000px';
-            
-            requestAnimationFrame(() => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const popH = popover.offsetHeight;
-                const popW = popover.offsetWidth;
-
-                // Позиционируем прямо над сообщением
-                let top = rect.top - popH - 10;
-                let left = isMe ? rect.right - popW : rect.left;
-
-                // Если меню уходит за верхний край экрана - открываем под сообщением
-                if (top < 60) top = rect.bottom + 10;
-                // Если уходит за левый или правый край
-                if (left < 10) left = 10;
-                if (left + popW > window.innerWidth - 10) left = window.innerWidth - popW - 10;
-
-                popover.style.top = top + 'px';
-                popover.style.left = left + 'px';
-            });
+            // Показываем меню
+            document.getElementById('blur-context-menu').classList.add('active');
         };
-        
-        window.closePopoverMenu = () => {
-            document.getElementById('message-popover-overlay').classList.remove('active');
+
+        window.closeContextMenu = () => {
+            document.getElementById('blur-context-menu').classList.remove('active');
         };
 
         window.execAction = (action) => {
-            window.closePopoverMenu();
+            window.closeContextMenu();
             if (!activeChatId || !actionMsg) return;
 
             if (action === 'delete') {
@@ -1056,7 +1018,7 @@
         };
 
         window.addReaction = (emoji, forceMsgId = null) => {
-            window.closePopoverMenu();
+            window.closeContextMenu();
             const msgId = forceMsgId || (actionMsg ? actionMsg.firebaseKey : null);
             if(!activeChatId || !msgId) return;
             update(ref(db, `messages/${activeChatId}/${msgId}/reactions/${currentUser.id}`), emoji);
