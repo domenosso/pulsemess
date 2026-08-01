@@ -200,14 +200,24 @@
         
         #custom-alert-overlay { z-index: 10000 !important; }
         #loader-overlay { z-index: 9999; flex-direction: column; color: white; font-weight: 600; }
-        #viewer-overlay { z-index: 200; } #pwa-modal { z-index: 200; }
+        #viewer-overlay { z-index: 2000; } #pwa-modal { z-index: 200; }
 
         .custom-modal { background: var(--bg-panel); padding: 30px; border-radius: 24px; text-align: center; max-width: 320px; width: 90%; box-shadow: var(--shadow-lg); animation: popIn 0.3s ease-out; position: relative; }
         .custom-modal h2 { font-size: 18px; margin-bottom: 12px; font-weight: 700; }
         .custom-modal p { font-size: 15px; color: var(--text-muted); line-height: 1.5; margin-bottom: 24px; word-break: break-word; }
         
-        .viewer-content { max-width: 90%; max-height: 80vh; display: flex; flex-direction: column; align-items: center; gap: 20px; color: white; }
-        .viewer-content img, .viewer-content video { max-width: 100%; max-height: 70vh; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        /* УЛУЧШЕННЫЙ ВИДЕОПЛЕЕР */
+        .viewer-content { 
+            width: 100%; max-width: 900px; padding: 0 20px; max-height: 95vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 16px; color: white; position: relative;
+        }
+        #viewer-body { width: 100%; display: flex; align-items: center; justify-content: center; }
+        #viewer-body video, #viewer-body img {
+            max-width: 100%; max-height: 75vh;
+            border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            object-fit: contain; background: #000; outline: none;
+        }
         
         /* ВСПЛЫВАЮЩЕЕ МЕНЮ (BLUR CONTEXT MENU) */
         .blur-context-overlay {
@@ -449,14 +459,14 @@
         </main>
     </div>
 
-    <!-- Модалка просмотра файлов -->
+    <!-- Модалка просмотра файлов (Улучшенная) -->
     <div id="viewer-overlay" class="overlay" onclick="window.closeViewer()">
         <div class="viewer-content" onclick="event.stopPropagation()">
-            <div style="position: absolute; top: 0; left: 0; width: 100%; padding: 20px; display: flex; justify-content: flex-end;">
-                <span class="icon btn-icon" style="color: white;" onclick="window.closeViewer()">close</span>
+            <div style="width: 100%; display: flex; justify-content: flex-end; margin-bottom: -10px;">
+                <span class="icon btn-icon" style="color: white; background: rgba(255,255,255,0.2);" onclick="window.closeViewer()">close</span>
             </div>
             <div id="viewer-body"></div>
-            <a id="viewer-download" class="btn" style="text-decoration: none;" download><span class="icon">download</span> Скачать</a>
+            <a id="viewer-download" class="btn" style="text-decoration: none; width: 100%; max-width: 300px;" download><span class="icon">download</span> Скачать файл</a>
         </div>
     </div>
 
@@ -690,14 +700,14 @@
                         avatarUrl = await uploadToGitHub(pureBase64, 'avatar.jpg');
                     }
                     const userId = 'user_' + Date.now();
-                    // Регистрация бота сразу для пользователя
+                    // Регистрация с ботом
                     currentUser = { id: userId, name: name, password: pass, avatarUrl: avatarUrl, color: '#007aff', isOnline: true, chats: { [BOT_ID]: true } };
                     await set(ref(db, 'users/' + userId), currentUser);
                     
-                    // Отправка приветственного сообщения от бота
+                    // Сообщение от бота
                     const botChatId = [userId, BOT_ID].sort().join('_');
                     push(ref(db, 'messages/' + botChatId), {
-                        senderId: BOT_ID, type: 'text', text: 'Привет! Я встроенный бот "Скачать Yt Inst". Отправь мне ссылку на видео из YouTube или Instagram, и я постараюсь скачать его для тебя (если видео меньше 25 МБ).', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
+                        senderId: BOT_ID, type: 'text', text: 'Привет! Я встроенный бот "Скачать Yt Inst". Отправь мне ссылку на видео из YouTube, Shorts, TikTok или Instagram.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
                     });
                 }
                 
@@ -726,21 +736,19 @@
             document.getElementById('profile-name-input').value = currentUser.name;
             renderAvatar(document.getElementById('profile-avatar-preview'), currentUser);
 
-            // Обеспечиваем, что бот есть у старых пользователей тоже
             if (!currentUser.chats) currentUser.chats = {};
             if (!currentUser.chats[BOT_ID]) {
                 currentUser.chats[BOT_ID] = true;
-                // ИСПРАВЛЕНО: использование set вместо update
                 set(ref(db, `users/${currentUser.id}/chats/${BOT_ID}`), true);
                 const botChatId = [currentUser.id, BOT_ID].sort().join('_');
                 push(ref(db, 'messages/' + botChatId), {
-                    senderId: BOT_ID, type: 'text', text: 'Привет! Я встроенный бот "Скачать Yt Inst". Отправь мне ссылку на видео из YouTube или Instagram.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
+                    senderId: BOT_ID, type: 'text', text: 'Привет! Я встроенный бот "Скачать Yt Inst". Отправь мне ссылку на видео из YouTube, Shorts, TikTok или Instagram.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
                 });
             }
 
             onValue(ref(db, 'users'), snapshot => {
                 allUsers = snapshot.val() || {};
-                allUsers[BOT_ID] = BOT_USER; // Добавляем бота локально в список всех пользователей
+                allUsers[BOT_ID] = BOT_USER; 
                 
                 if(allUsers[currentUser.id]) {
                     currentUser.name = allUsers[currentUser.id].name;
@@ -761,13 +769,11 @@
         }
 
         function fireNotification(chatId, title, body) {
-            // Оповещаем всегда, если мы не находимся прямо в этом чате в данный момент (и окно открыто)
             if (activeChatId !== chatId) {
                 notifyAudio.currentTime = 0; 
                 notifyAudio.play().catch(e => {}); 
                 window.showToast(title, body);
             }
-            // Системный push только если браузер свернут
             if (document.visibilityState !== 'visible' && Notification.permission === 'granted') {
                 new Notification(title, { body: body, icon: 'icon.png' });
             }
@@ -1059,7 +1065,7 @@
                 </div>`;
             }
 
-            // Добавляем текст (подпись) под медиа, либо если это просто текст
+            // Добавляем текст (подпись) под медиа
             if (msg.type !== 'text' && msg.type !== 'voice' && msg.text) {
                 contentHTML += `<div style="margin-top:6px;">${msg.text.replace(/\n/g, '<br>')}</div>`;
             } else if (msg.type === 'text') {
@@ -1192,38 +1198,81 @@
             document.getElementById('btn-send').classList.add('hidden');
         };
 
-        // Вспомогательная функция для логики встроенного бота
+        // Запрос к Cobalt API с использованием резервных серверов
+        async function fetchWithFallback(url) {
+            const apis = [
+                "https://api.cobalt.tools",
+                "https://cobalt-api.peuk.dev",
+                "https://cobalt.owo.si",
+                "https://api.zeon.dev"
+            ];
+            for (let api of apis) {
+                try {
+                    const res = await fetch(`${api}/api/json`, {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: url, filenamePattern: "classic" })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.status !== "error") return data;
+                    }
+                } catch (e) {
+                    // Игнорируем ошибку CORS/недоступности и пробуем следующий сервер
+                }
+            }
+            return null;
+        }
+
         function handleBotMessage(text) {
             if (!text) return;
-            const textL = text.toLowerCase();
             const botChatId = [currentUser.id, BOT_ID].sort().join('_');
             
-            if (textL.includes('youtube.com') || textL.includes('youtu.be') || textL.includes('instagram.com')) {
+            const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
+            if (!urlMatch) {
                 setTimeout(() => {
                     push(ref(db, 'messages/' + botChatId), {
-                        senderId: BOT_ID, type: 'text', text: 'Пытаюсь скачать ваше видео, подождите...', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
-                    });
-                    // Имитация скачивания и ответа
-                    setTimeout(() => {
-                        const success = Math.random() > 0.3; // 70% успех
-                        if (success) {
-                            push(ref(db, 'messages/' + botChatId), {
-                                senderId: BOT_ID, type: 'video', url: 'https://www.w3schools.com/html/mov_bbb.mp4', text: 'Я скачал вам видео!', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
-                            });
-                        } else {
-                            push(ref(db, 'messages/' + botChatId), {
-                                senderId: BOT_ID, type: 'text', text: 'К сожалению, видео слишком большое (больше 25 мб) или недоступно по ссылке.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
-                            });
-                        }
-                    }, 3000);
-                }, 800);
-            } else {
-                setTimeout(() => {
-                    push(ref(db, 'messages/' + botChatId), {
-                        senderId: BOT_ID, type: 'text', text: 'Пожалуйста, отправьте корректную ссылку на видео из YouTube или Instagram.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
+                        senderId: BOT_ID, type: 'text', text: 'Пожалуйста, отправьте корректную ссылку на видео (YouTube, Instagram, TikTok, Twitter).', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
                     });
                 }, 800);
+                return;
             }
+            
+            const targetUrl = urlMatch[0];
+            
+            setTimeout(async () => {
+                push(ref(db, 'messages/' + botChatId), {
+                    senderId: BOT_ID, type: 'text', text: 'Ищу медиа по ссылке, подождите...', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
+                });
+                
+                try {
+                    const data = await fetchWithFallback(targetUrl);
+                    if (data) {
+                        let resultUrl = data.url;
+                        if (!resultUrl && data.picker && data.picker.length > 0) {
+                            const videoItem = data.picker.find(p => p.type === 'video');
+                            resultUrl = videoItem ? videoItem.url : data.picker[0].url;
+                        }
+                        
+                        if (resultUrl) {
+                            let resultText = data.text ? data.text : 'Я скачал ваше медиа!';
+                            push(ref(db, 'messages/' + botChatId), {
+                                senderId: BOT_ID, type: 'video', url: resultUrl, text: resultText, time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
+                            });
+                            return;
+                        }
+                    }
+                    
+                    // Если дошли сюда — скачивание не удалось
+                    push(ref(db, 'messages/' + botChatId), {
+                        senderId: BOT_ID, type: 'text', text: 'К сожалению, не удалось скачать видео. Оно закрыто настройками приватности или недоступно.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
+                    });
+                } catch(err) {
+                     push(ref(db, 'messages/' + botChatId), {
+                        senderId: BOT_ID, type: 'text', text: 'Произошла ошибка при загрузке. Попробуйте другую ссылку.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
+                    });
+                }
+            }, 800);
         }
 
         window.sendTextMessage = async () => {
@@ -1232,7 +1281,6 @@
             
             if (!text && !window.pendingFile) return;
 
-            // Если есть прикрепленный файл, загружаем его вместе с подписью
             if (window.pendingFile) {
                 document.getElementById('loader-overlay').classList.add('active');
                 const file = window.pendingFile;
@@ -1276,7 +1324,6 @@
             push(ref(db, 'messages/' + activeChatId), payload);
             addChatToProfile(activeUserId);
 
-            // Обработка встроенного бота
             if (activeUserId === BOT_ID) {
                 handleBotMessage(payload.text || payload.fileName);
             }
@@ -1310,7 +1357,6 @@
 
         function getFormattedTime() { return new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }
 
-        // Новая логика обработки файлов (с превью для подписей)
         window.handleFileUpload = (e) => {
             const file = e.target.files[0];
             if(!file || !activeChatId) return;
@@ -1349,12 +1395,12 @@
 
         window.startVoice = async (e) => {
             if (e && e.type === 'touchstart') voiceTriggeredByTouch = true;
-            if (e && e.type === 'mousedown' && voiceTriggeredByTouch) return; // Фикс двойного срабатывания
+            if (e && e.type === 'mousedown' && voiceTriggeredByTouch) return; 
 
-            if (isRecording) return; // Защита от дублей
-            isRecording = true; // Мгновенная блокировка
+            if (isRecording) return; 
+            isRecording = true; 
 
-            clearInterval(recordTimerInterval); // Точно очищаем перед стартом
+            clearInterval(recordTimerInterval); 
             
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -1398,7 +1444,6 @@
                 recordStartTime = Date.now();
                 document.getElementById('btn-mic').style.background = '#ff3b30'; 
                 
-                // Переключение UI
                 document.getElementById('input-box-wrapper').classList.add('hidden');
                 document.getElementById('btn-attach').classList.add('hidden');
                 document.getElementById('recording-ui').classList.remove('hidden');
@@ -1436,13 +1481,15 @@
             const body = document.getElementById('viewer-body');
             document.getElementById('viewer-download').href = url;
             if (type === 'image') body.innerHTML = `<img src="${url}">`;
-            else if (type === 'video') body.innerHTML = `<video src="${url}" controls autoplay></video>`;
-            else if (type === 'document') body.innerHTML = `<span class="icon" style="font-size:100px;">description</span><h3 style="margin-top:16px;">${name}</h3>`;
+            // Улучшенный плеер: playsinline (важно для iOS), controlsList="nodownload" 
+            else if (type === 'video') body.innerHTML = `<video src="${url}" controls autoplay playsinline controlsList="nodownload"></video>`;
+            else if (type === 'document') body.innerHTML = `<span class="icon" style="font-size:100px;">description</span><h3 style="margin-top:16px; text-align:center;">${name}</h3>`;
             document.getElementById('viewer-overlay').classList.add('active');
         };
+        
         window.closeViewer = () => {
             document.getElementById('viewer-overlay').classList.remove('active');
-            document.getElementById('viewer-body').innerHTML = ''; 
+            document.getElementById('viewer-body').innerHTML = ''; // Очистка innerHTML автоматически останавливает видеоплеер
         };
 
         function initTheme() {
