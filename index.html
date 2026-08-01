@@ -673,7 +673,7 @@
                     // Приветственное сообщение от бота
                     const botChatId = [userId, BOT_ID].sort().join('_');
                     push(ref(db, 'messages/' + botChatId), {
-                        senderId: BOT_ID, type: 'text', text: 'Привет! Я встроенный бот "Скачать Yt Inst". Отправь мне ссылку на видео из YouTube, Shorts, TikTok или Instagram.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
+                        senderId: BOT_ID, type: 'text', text: 'Извините.но бот пока не работает.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
                     });
                 }
                 
