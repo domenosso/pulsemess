@@ -29,13 +29,11 @@
         ::selection { background: var(--accent); color: #fff; }
         ::-moz-selection { background: var(--accent); color: #fff; }
 
-        /* Кастомный скроллбар */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(150, 150, 150, 0.4); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(150, 150, 150, 0.6); }
 
-        /* === БАЗОВЫЕ ПЕРЕМЕННЫЕ === */
         :root {
             --bg-main: #f3f4f6; --bg-panel: #ffffff; --bg-chat: #efeae2; --bg-input: #f3f4f6; --bg-hover: #f9fafb;
             --text-main: #111827; --text-muted: #6b7280; --accent: #007aff; --accent-hover: #005bb5;
@@ -44,7 +42,6 @@
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.05); --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1);
         }
 
-        /* === ТЁМНАЯ ТЕМА === */
         [data-theme="dark"] {
             --bg-main: #000000; --bg-panel: #1c1c1e; --bg-chat: #000000; --bg-input: #2c2c2e; --bg-hover: #3a3a3c;
             --text-main: #ffffff; --text-muted: #98989d; --accent: #0a84ff; --accent-hover: #007aff;
@@ -53,7 +50,7 @@
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.5); --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.5);
         }
 
-        /* === РЕЖИМ СТЕКЛА (РЕАЛИСТИЧНЫЙ APPLE LIQUID GLASS iOS 26) === */
+        /* LIQUID GLASS iOS 26 */
         body[data-glass="true"]::before {
             content: ''; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: -1;
             background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #a1c4fd 100%);
@@ -99,13 +96,11 @@
             box-shadow: var(--shadow-lg);
         }
 
-        /* === БАЗА === */
         body { background-color: var(--bg-main); color: var(--text-main); height: 100dvh; overflow: hidden; display: flex; justify-content: center; user-select: none; transition: background-color 0.3s; overscroll-behavior-y: none; }
         input, button, textarea { border: none; color: inherit; background: none; }
         .icon { font-family: 'Material Symbols Rounded'; font-size: 24px; display: inline-block; user-select: none; }
         .hidden { display: none !important; }
 
-        /* === UI ЭЛЕМЕНТЫ === */
         .btn { background: var(--accent); color: white; padding: 14px 24px; border-radius: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; box-shadow: 0 4px 14px rgba(0, 122, 255, 0.3); }
         .btn:active { transform: scale(0.96); }
         .btn:hover { filter: brightness(1.1); }
@@ -121,7 +116,6 @@
         .avatar { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; background-size: cover; background-position: center; box-shadow: var(--shadow-sm); flex-shrink: 0; font-weight: 600; }
         .avatar-upload-circle { width: 100px; height: 100px; border-radius: 50%; background: var(--bg-input); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed var(--border); transition: 0.2s; color: var(--text-muted); background-size: cover; background-position: center; position: relative; overflow: hidden; margin: 0 auto 20px auto; }
         
-        /* === ВХОД === */
         #auth-screen { width: 100%; height: 100%; position: absolute; z-index: 100; display: flex; align-items: center; justify-content: center; }
         .auth-card { background: var(--bg-panel); padding: 40px; border-radius: 32px; box-shadow: var(--shadow-lg); width: 90%; max-width: 400px; }
         .input-group { margin-bottom: 20px; text-align: left; }
@@ -130,7 +124,6 @@
         .input-group input:focus { border-color: var(--accent); }
         .auth-toggle-link { text-align: center; font-size: 14px; font-weight: 600; color: var(--accent); cursor: pointer; margin-top: 16px; }
 
-        /* === ГЛАВНОЕ ОКНО === */
         #app-screen { width: 100%; max-width: 1400px; height: 100%; display: flex; background: var(--bg-panel); box-shadow: var(--shadow-lg); overflow: hidden; position: relative; }
         #main-nav { background: var(--nav-bg); z-index: 40; border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; gap: 20px; width: 80px; }
         .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); cursor: pointer; padding: 12px; border-radius: 16px; font-size: 11px; font-weight: 500; transition: 0.2s; position: relative; }
@@ -162,7 +155,6 @@
         .settings-item { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: var(--bg-input); border-radius: 16px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
         .settings-item:hover { transform: scale(0.98); }
         
-        /* === ЧАТ === */
         #chat-area { flex: 1; display: flex; flex-direction: column; background-color: var(--bg-chat); position: relative; }
         .chat-header { padding: 12px 20px; background: var(--glass-bg); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; z-index: 5; }
         .back-btn { display: none; }
@@ -196,7 +188,6 @@
         .btn-send { background: var(--accent); color: white; }
         .btn-mic { background: #34c759; color: white; }
 
-        /* ОВЕРЛЕИ И КАСТОМНЫЕ МОДАЛКИ */
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; backdrop-filter: blur(10px); }
         .overlay.active { opacity: 1; pointer-events: auto; }
         
@@ -220,6 +211,10 @@
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* DUO MODE STYLES */
+        .duo-text { position: absolute; bottom: 15px; width: 100%; text-align: center; font-size: 11px; color: var(--text-muted); opacity: 0.5; cursor: pointer; transition: 0.2s; }
+        .duo-text:hover { opacity: 1; color: var(--accent); }
+
         @media (max-width: 768px) {
             #main-nav { flex-direction: row; width: 100%; height: auto; position: absolute; bottom: 0; left: 0; justify-content: space-around; padding: 10px 0; padding-bottom: calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); border-right: none; }
             .nav-item { flex: 1; padding: 8px; }
@@ -240,7 +235,7 @@
         <div id="loader-text">Загрузка...</div>
     </div>
 
-    <!-- КАСТОМНЫЕ АЛЕРТЫ И CONFIRM -->
+    <!-- УМНЫЕ КАСТОМНЫЕ АЛЕРТЫ -->
     <div id="custom-alert-overlay" class="overlay">
         <div class="custom-modal">
             <h2 id="custom-alert-title">Уведомление</h2>
@@ -252,7 +247,7 @@
         </div>
     </div>
 
-    <!-- PWA Инструкция -->
+    <!-- PWA Инструкция (Теперь появляется 1 раз) -->
     <div id="pwa-modal" class="overlay">
         <div class="custom-modal">
             <span class="icon btn-icon" style="position: absolute; top: 10px; right: 10px;" onclick="window.closePwaModal()">close</span>
@@ -292,6 +287,9 @@
                 Уже есть аккаунт? Войти
             </div>
         </div>
+        
+        <!-- ДУО РЕЖИМ (Скрытая кнопка для тестов) -->
+        <div id="duo-btn" class="duo-text" onclick="window.startDuoMode()">Дуо режим (Тест)</div>
     </div>
 
     <!-- Основное приложение -->
@@ -429,8 +427,6 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-
-        // Репозиторий GitHub
         const GH_REPO = "domenosso/nano-mess-cloud";
 
         let currentUser = null;
@@ -445,13 +441,13 @@
         let knownMessages = new Set();
         let isAppReady = false; 
         const notifyAudio = document.getElementById('notify-sound');
-        
         let cachedGitKey = null;
 
-        // === КАСТОМНЫЕ УВЕДОМЛЕНИЯ ===
+        // === ОБНОВЛЕННЫЕ УМНЫЕ АЛЕРТЫ ===
         let alertResolve = null;
-        window.customAlert = (msg, isConfirm = false) => {
+        window.customAlert = (title, msg, isConfirm = false) => {
             return new Promise(resolve => {
+                document.getElementById('custom-alert-title').innerText = title;
                 document.getElementById('custom-alert-text').innerText = msg;
                 document.getElementById('custom-alert-cancel').style.display = isConfirm ? 'block' : 'none';
                 document.getElementById('custom-alert-overlay').classList.add('active');
@@ -463,7 +459,39 @@
             if(alertResolve) alertResolve(res);
         };
 
-        // ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ КЛЮЧА GITHUB ИЗ БАЗЫ FIREBASE
+        // ДУО РЕЖИМ (ТЕСТИРОВАНИЕ)
+        window.startDuoMode = () => {
+            const isDesktop = window.innerWidth > 768;
+            document.body.innerHTML = `
+                <div style="display:flex; width: 100vw; height: 100dvh; flex-direction: ${isDesktop ? 'row' : 'column'};">
+                    <iframe src="?duouser=test1" style="flex:1; border:none; border-right: ${isDesktop ? '2px solid var(--accent)' : 'none'}; border-bottom: ${!isDesktop ? '2px solid var(--accent)' : 'none'};"></iframe>
+                    <iframe src="?duouser=test2" style="flex:1; border:none;"></iframe>
+                </div>
+            `;
+        };
+
+        async function autoLoginDuo(testName) {
+            document.getElementById('loader-overlay').classList.add('active');
+            try {
+                const snapshot = await get(ref(db, 'users'));
+                const users = snapshot.val() || {};
+                const existingUserKey = Object.keys(users).find(key => users[key].name === testName);
+                
+                if (existingUserKey) {
+                    currentUser = users[existingUserKey];
+                } else {
+                    const userId = 'user_' + testName + '_' + Date.now();
+                    currentUser = { id: userId, name: testName, password: '123', avatarUrl: null, color: '#007aff', isOnline: true, chats: {} };
+                    await set(ref(db, 'users/' + userId), currentUser);
+                }
+                
+                localStorage.setItem('nano_user', JSON.stringify({id: currentUser.id, name: currentUser.name, avatarUrl: currentUser.avatarUrl, color: currentUser.color, chats: currentUser.chats || {}}));
+                document.getElementById('loader-overlay').classList.remove('active');
+                showApp();
+                setupPresence();
+            } catch (e) { console.error(e); }
+        }
+
         async function getGitKey() {
             if (cachedGitKey) return cachedGitKey;
             try {
@@ -471,62 +499,64 @@
                 if (snapshot.exists()) {
                     cachedGitKey = snapshot.val();
                     return cachedGitKey;
-                } else {
-                    throw new Error("Не найден ключ 'gitkey' в базе данных Firebase.");
                 }
             } catch (e) {
-                console.error("Ошибка при получении ключа:", e);
-                window.customAlert("Ошибка доступа. Убедитесь, что в Firebase создан ключ 'gitkey' и разрешен доступ в Rules.");
+                window.customAlert("Ошибка доступа", "Убедитесь, что в Firebase создан ключ 'gitkey'.");
                 return null;
             }
         }
 
-        // ЗАГРУЗКА В GITHUB С КЛЮЧОМ ИЗ БАЗЫ
         async function uploadToGitHub(base64Data, filename) {
             try {
                 const token = await getGitKey();
                 if (!token) return null;
-
                 const safeName = Date.now() + '_' + filename.replace(/[^a-zA-Z0-9.]/g, '_');
                 const url = `https://api.github.com/repos/${GH_REPO}/contents/uploads/${safeName}`;
-                
                 const response = await fetch(url, {
                     method: 'PUT',
-                    headers: { 
-                        'Authorization': `token ${token}`, 
-                        'Content-Type': 'application/json' 
-                    },
+                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: `Upload ${safeName}`, content: base64Data })
                 });
-                
-                if(!response.ok) throw new Error('GitHub API Error (возможно токен неверный или заблокирован)');
+                if(!response.ok) throw new Error('API Error');
                 const data = await response.json();
                 return data.content.download_url;
             } catch (e) {
-                console.error("GH Error:", e);
-                window.customAlert('Ошибка загрузки файла в облако. Проверьте ключ gitkey в базе.');
+                window.customAlert('Ошибка загрузки', 'Ошибка отправки файла в облако. Проверьте ключ GitHub.');
                 return null;
             }
         }
 
         window.onload = () => {
+            const params = new URLSearchParams(window.location.search);
+            const duoUser = params.get('duouser');
+            
             initTheme();
             initGlassMode();
-            checkPWA();
             
-            const stored = localStorage.getItem('nano_user');
-            if (stored) {
-                currentUser = JSON.parse(stored);
-                showApp();
-                setupPresence();
+            if (duoUser) {
+                document.getElementById('duo-btn').style.display = 'none';
+                autoLoginDuo(duoUser);
+            } else {
+                checkPWA();
+                const stored = localStorage.getItem('nano_user');
+                if (stored) {
+                    currentUser = JSON.parse(stored);
+                    showApp();
+                    setupPresence();
+                }
             }
             window.setupInputWatch();
             setTimeout(() => { isAppReady = true; }, 2000); 
         };
 
+        // PWA ТЕПЕРЬ ПОКАЗЫВАЕТСЯ ТОЛЬКО 1 РАЗ ЗА СЕССИЮ
         function checkPWA() {
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-            if (!isStandalone) {
+            const hasPrompted = sessionStorage.getItem('pwa_prompted');
+            
+            if (!isStandalone && !hasPrompted) {
+                sessionStorage.setItem('pwa_prompted', 'true'); // Запоминаем, что уже показали
+                
                 const ua = navigator.userAgent.toLowerCase();
                 let text = "Установите приложение для работы уведомлений и стабильного соединения!<br><br>";
                 if (/iphone|ipad|ipod/.test(ua)) text += "Нажмите <b>Поделиться</b> (Квадрат со стрелкой внизу), затем выберите <b>«На экран Домой»</b>.";
@@ -550,7 +580,7 @@
         window.submitAuth = async () => {
             const name = document.getElementById('auth-name').value.trim();
             const pass = document.getElementById('auth-pass').value.trim();
-            if(!name || !pass) return window.customAlert('Введите логин и пароль');
+            if(!name || !pass) return window.customAlert('Ошибка', 'Пожалуйста, введите логин и пароль.');
             
             document.getElementById('loader-overlay').classList.add('active');
             
@@ -562,17 +592,17 @@
                 if (isLoginMode) {
                     if (!existingUserKey) {
                         document.getElementById('loader-overlay').classList.remove('active');
-                        return window.customAlert('Пользователь не найден!');
+                        return window.customAlert('Ошибка входа', 'Такого пользователя не существует.');
                     }
                     if (users[existingUserKey].password !== pass) {
                         document.getElementById('loader-overlay').classList.remove('active');
-                        return window.customAlert('Неверный пароль!');
+                        return window.customAlert('Ошибка авторизации', 'Вы ввели неверный пароль. Попробуйте снова.');
                     }
                     currentUser = users[existingUserKey];
                 } else {
                     if (existingUserKey) {
                         document.getElementById('loader-overlay').classList.remove('active');
-                        return window.customAlert('Логин уже занят!');
+                        return window.customAlert('Регистрация', 'Этот логин уже занят кем-то другим.');
                     }
                     
                     let avatarUrl = null;
@@ -587,7 +617,6 @@
                 }
                 
                 localStorage.setItem('nano_user', JSON.stringify({id: currentUser.id, name: currentUser.name, avatarUrl: currentUser.avatarUrl, color: currentUser.color, chats: currentUser.chats || {}}));
-                
                 document.getElementById('loader-overlay').classList.remove('active');
                 
                 showApp();
@@ -596,8 +625,7 @@
                 
             } catch (e) { 
                 document.getElementById('loader-overlay').classList.remove('active');
-                console.error(e);
-                window.customAlert('Ошибка. Проверьте права БД (rules) в Firebase. ' + e.message); 
+                window.customAlert('Системная ошибка', 'Не удалось связаться с сервером. Попробуйте позже.'); 
             }
         };
 
@@ -607,6 +635,7 @@
             onDisconnect(myStatusRef).set(false);
         }
 
+        // ОБНОВЛЕННАЯ ЛОГИКА ОТОБРАЖЕНИЯ НОВЫХ ЧАТОВ В РЕАЛЬНОМ ВРЕМЕНИ
         function showApp() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
@@ -617,10 +646,13 @@
 
             onValue(ref(db, 'users'), snapshot => {
                 allUsers = snapshot.val() || {};
-                if(allUsers[currentUser.id]) currentUser.chats = allUsers[currentUser.id].chats || {};
+                if(allUsers[currentUser.id]) {
+                    currentUser.chats = allUsers[currentUser.id].chats || {};
+                }
                 
                 window.renderUsersList();
                 watchAllMyChats(); 
+                
                 if (activeUserId && allUsers[activeUserId]) {
                     const statusText = allUsers[activeUserId].isOnline ? '<span class="online-dot"></span> В сети' : 'Был(а) недавно';
                     document.getElementById('active-chat-status').innerHTML = statusText;
@@ -649,7 +681,7 @@
                             if (!knownMessages.has(key)) {
                                 knownMessages.add(key);
                                 if (msg.senderId !== currentUser.id && isAppReady) {
-                                    hasNew = true; latestMsgText = msg.type === 'text' ? msg.text : 'Прикрепленный файл';
+                                    hasNew = true; latestMsgText = msg.type === 'text' ? msg.text : 'Файл';
                                 }
                             }
                         });
@@ -666,7 +698,7 @@
                             notifyAudio.currentTime = 0; notifyAudio.play().catch(e => {});
                         }
                         if (Notification.permission === 'granted' && (document.visibilityState !== 'visible' || activeChatId !== chatId)) {
-                            new Notification(allUsers[userId]?.name || 'Пользователь', { body: latestMsgText, icon: 'icon.png' });
+                            new Notification(allUsers[userId]?.name || 'Новое сообщение', { body: latestMsgText, icon: 'icon.png' });
                         }
                     }
                 });
@@ -677,7 +709,7 @@
             if ("Notification" in window) {
                 try {
                     const p = await Notification.requestPermission();
-                    if (p === "granted") window.customAlert("Уведомления включены!");
+                    if (p === "granted") window.customAlert("Успешно", "Push-уведомления успешно включены!");
                 } catch (e) {
                     console.log("Уведомления не поддерживаются в этой среде");
                 }
@@ -685,10 +717,10 @@
         }
 
         window.logout = async () => {
-            if (await window.customAlert('Точно выйти из аккаунта?', true)) {
+            if (await window.customAlert('Выход из аккаунта', 'Вы действительно хотите выйти из своей учетной записи?', true)) {
                 if(currentUser) set(ref(db, 'users/' + currentUser.id + '/isOnline'), false);
                 localStorage.removeItem('nano_user');
-                location.reload();
+                location.href = window.location.pathname; // Сброс URL без параметров дуо
             }
         };
 
@@ -709,7 +741,7 @@
             document.getElementById('profile-name-display').innerText = currentUser.name;
             
             document.getElementById('loader-overlay').classList.remove('active');
-            window.customAlert('Профиль обновлен!');
+            window.customAlert('Успешно', 'Ваш профиль был успешно обновлен!');
             tempAvatarBase64 = null;
         };
 
@@ -731,7 +763,6 @@
                     tempAvatarBase64 = canvas.toDataURL('image/jpeg', 0.8);
                     
                     document.getElementById(previewId).style.backgroundImage = `url(${tempAvatarBase64})`;
-                    
                     const innerText = document.getElementById('auth-avatar-inner');
                     if (innerText) innerText.style.display = 'none';
                 };
@@ -795,12 +826,18 @@
             }
         };
 
+        // ИСПРАВЛЕННАЯ ЛОГИКА ДОБАВЛЕНИЯ ЧАТА (ЧТОБЫ ОН ПОЯВЛЯЛСЯ МОМЕНТАЛЬНО У НОВОГО ПОЛЬЗОВАТЕЛЯ)
         function addChatToProfile(targetId) {
             if (!currentUser.chats) currentUser.chats = {};
             if (!currentUser.chats[targetId]) {
                 currentUser.chats[targetId] = true;
-                update(ref(db, `users/${currentUser.id}/chats`), currentUser.chats);
-                update(ref(db, `users/${targetId}/chats`), { [currentUser.id]: true });
+                
+                // Безопасное обновление конкретных веток без затирания остальной истории
+                let updates = {};
+                updates[`users/${currentUser.id}/chats/${targetId}`] = true;
+                updates[`users/${targetId}/chats/${currentUser.id}`] = true;
+                
+                update(ref(db), updates);
             }
         }
 
@@ -866,7 +903,6 @@
             bubble.onmouseup = bubble.onmouseleave = bubble.ontouchend = bubble.ontouchmove = () => clearTimeout(pressTimer);
 
             let contentHTML = '';
-            
             if (msg.type === 'text') contentHTML += `<div>${msg.text.replace(/\n/g, '<br>')}</div>`;
             else if (msg.type === 'image') contentHTML += `<img src="${msg.url}" class="msg-media" onclick="window.openViewer('image', '${msg.url}')" />`;
             else if (msg.type === 'video') contentHTML += `<video src="${msg.url}" class="msg-media" onclick="window.openViewer('video', '${msg.url}')"></video>`;
@@ -990,7 +1026,7 @@
                 };
                 mediaRecorder.start(); isRecording = true; 
                 document.getElementById('btn-mic').style.background = '#ff3b30'; 
-            } catch (err) { window.customAlert('Нет доступа к микрофону'); }
+            } catch (err) { window.customAlert('Ошибка', 'Нет доступа к микрофону.'); }
         };
         window.stopVoice = () => {
             if (isRecording && mediaRecorder) { 
@@ -1003,7 +1039,7 @@
         window.execAction = async (action) => {
             window.closeBottomSheet();
             if(action === 'delete' && targetMsgId && activeChatId) {
-                if(await window.customAlert('Удалить сообщение для всех?', true)) {
+                if(await window.customAlert('Удаление', 'Удалить это сообщение для всех?', true)) {
                     remove(ref(db, `messages/${activeChatId}/${targetMsgId}`));
                 }
             }
@@ -1013,7 +1049,7 @@
                 const msg = snapshot.val();
                 if(msg && msg.type === 'text') {
                     navigator.clipboard.writeText(msg.text);
-                    window.customAlert('Скопировано');
+                    window.customAlert('Успешно', 'Текст сообщения скопирован в буфер обмена.');
                 }
                 window.closeBottomSheet();
             });
