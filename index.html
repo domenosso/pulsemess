@@ -384,6 +384,7 @@
         </div>
     </div>
 
+    <!-- МЕНЮ ДЕЙСТВИЙ С СООБЩЕНИЕМ -->
     <div id="bottom-sheet-overlay" class="overlay" onclick="window.closeBottomSheet()">
         <div id="bottom-sheet" class="bottom-sheet" onclick="event.stopPropagation()">
             <div style="width: 40px; height: 5px; background: var(--border); border-radius: 5px; margin: 0 auto 10px auto;"></div>
@@ -419,14 +420,19 @@
         const db = getDatabase(app);
         const GH_REPO = "domenosso/nano-mess-cloud";
 
+        // === ОБЯЗАТЕЛЬНЫЕ ПЕРЕМЕННЫЕ ===
         let currentUser = null;
         let allUsers = {};
         let activeChatId = null;
         let activeUserId = null;
         
-        // Для действий
+        // Переменные для функций (важно!)
+        let tempAvatarBase64 = null; 
+        let isLoginMode = false;
+        
+        // Для действий (редактирование/ответы)
         let actionMsg = null;
-        let activeAction = null; // 'reply' | 'edit' | null
+        let activeAction = null; 
         
         let chatListeners = {};
         let knownMessages = new Set();
@@ -799,7 +805,7 @@
             if (window.innerWidth <= 768) { document.getElementById('chat-area').classList.add('active'); history.pushState({chat: true}, 'Chat'); }
             
             window.renderUsersList();
-            window.cancelMessageAction(); // Сброс ответа/редактирования
+            window.cancelMessageAction();
             loadMessages();
         };
 
@@ -834,12 +840,10 @@
             const bubble = document.createElement('div');
             bubble.className = `message ${isMe ? 'outgoing' : 'incoming'}`;
             
-            // ВЫЗОВ ДЕЙСТВИЙ ПО КЛИКУ (КАК В ТГ)
             bubble.onclick = (e) => window.openBottomSheet(msg, isMe);
 
             let contentHTML = '';
 
-            // БЛОК ОТВЕТА
             if (msg.replyTo) {
                 contentHTML += `<div class="reply-block" onclick="event.stopPropagation(); document.getElementById('msg-${msg.replyTo.id}')?.scrollIntoView({behavior: 'smooth', block: 'center'})">
                     <strong style="color: ${isMe ? 'rgba(255,255,255,0.9)' : 'var(--accent)'};">${msg.replyTo.senderName}</strong><br>
@@ -863,7 +867,6 @@
                 contentHTML += `<div class="msg-audio" onclick="event.stopPropagation()"><span class="icon" style="color: ${isMe ? 'white' : 'var(--accent)'}; font-size:28px;">mic</span><audio controls src="${msg.url}" controlsList="nodownload noplaybackrate"></audio></div>`;
             }
 
-            // РЕАКЦИИ
             if (msg.reactions) {
                 const counts = {};
                 Object.values(msg.reactions).forEach(emoji => { counts[emoji] = (counts[emoji] || 0) + 1; });
@@ -887,7 +890,6 @@
             container.appendChild(row);
         }
 
-        // ОТКРЫТИЕ МЕНЮ (КАК В ТГ)
         window.openBottomSheet = (msg, isMe) => {
             actionMsg = msg;
             
@@ -905,7 +907,6 @@
             setTimeout(() => document.getElementById('bottom-sheet-overlay').classList.remove('active'), 300);
         };
 
-        // ВЫПОЛНЕНИЕ ДЕЙСТВИЯ (ОТВЕТ, РЕДАКТ И ТД)
         window.execAction = (action) => {
             window.closeBottomSheet();
             if (!activeChatId || !actionMsg) return;
@@ -915,8 +916,10 @@
                     if(res) remove(ref(db, `messages/${activeChatId}/${actionMsg.firebaseKey}`));
                 });
             } else if (action === 'copy') {
-                navigator.clipboard.writeText(actionMsg.text);
-                window.customAlert('Успешно', 'Текст скопирован.');
+                if (actionMsg.type === 'text') {
+                    navigator.clipboard.writeText(actionMsg.text);
+                    window.customAlert('Успешно', 'Текст скопирован.');
+                }
             } else if (action === 'reply') {
                 activeAction = 'reply';
                 const sName = actionMsg.senderId === currentUser.id ? currentUser.name : allUsers[actionMsg.senderId]?.name;
@@ -935,8 +938,7 @@
         };
 
         window.cancelMessageAction = () => {
-            activeAction = null;
-            actionMsg = null;
+            activeAction = null; actionMsg = null;
             document.getElementById('action-bar').classList.add('hidden');
             document.getElementById('message-input').value = '';
             window.setupInputWatch();
@@ -998,7 +1000,7 @@
                 }
             };
             input.addEventListener('input', checkInput);
-            checkInput(); // init
+            checkInput();
         };
 
         function getFormattedTime() { return new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }
@@ -1070,6 +1072,9 @@
                 mediaRecorder.stream.getTracks().forEach(t => t.stop()); 
             }
         };
+
+        // Копирование теперь через отдельную функцию не нужно, но оставим для совместимости вызова
+        window.copyTextMobile = () => { window.execAction('copy'); };
 
         window.openViewer = (type, url, name) => {
             const body = document.getElementById('viewer-body');
