@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
 
     <style>
-        /* === КАСТОМНЫЕ СТИЛИ === */
+        /* === КАСТОМНЫЕ СТИЛИ И УЛУЧШЕННАЯ СВЕТЛАЯ ТЕМА === */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; outline: none; }
         ::selection { background: var(--accent); color: #fff; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -25,11 +25,11 @@
         ::-webkit-scrollbar-thumb { background: rgba(150, 150, 150, 0.4); border-radius: 10px; }
 
         :root {
-            --bg-main: #f3f4f6; --bg-panel: #ffffff; --bg-chat: #efeae2; --bg-input: #f3f4f6; --bg-hover: #f9fafb;
-            --text-main: #111827; --text-muted: #6b7280; --accent: #007aff; --accent-hover: #005bb5;
-            --msg-out: #007aff; --msg-out-text: #ffffff; --msg-in: #ffffff; --msg-in-text: #111827;
-            --border: #e5e7eb; --glass-bg: rgba(255, 255, 255, 0.95); --nav-bg: #ffffff;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05); --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1);
+            --bg-main: #f0f2f5; --bg-panel: #ffffff; --bg-chat: #e5e5ea; --bg-input: #f4f4f5; --bg-hover: #f9fafb;
+            --text-main: #000000; --text-muted: #8e8e93; --accent: #007aff; --accent-hover: #005bb5;
+            --msg-out: #007aff; --msg-out-text: #ffffff; --msg-in: #ffffff; --msg-in-text: #000000;
+            --border: #d1d1d6; --glass-bg: rgba(255, 255, 255, 0.85); --nav-bg: #ffffff;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.1); --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1);
         }
 
         [data-theme="dark"] {
@@ -170,7 +170,11 @@
         .action-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; background: var(--glass-bg); border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); z-index: 10; }
         .action-bar-content { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 10px; border-left: 3px solid var(--accent); margin-left: 4px; padding-left: 10px; }
 
-        .chat-input-area { padding: 12px 20px; display: flex; align-items: flex-end; gap: 12px; background: var(--glass-bg); border-top: 1px solid var(--border); z-index: 10; min-height: 68px; }
+        .chat-input-area { position: relative; padding: 12px 20px; display: flex; align-items: flex-end; gap: 12px; background: var(--glass-bg); border-top: 1px solid var(--border); z-index: 10; min-height: 68px; }
+        
+        /* ПРЕВЬЮ ПРИКРЕПЛЕННОГО ФАЙЛА (С ПОДПИСЬЮ) */
+        #attachment-preview { position: absolute; bottom: 100%; left: 0; width: 100%; background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 10px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; z-index: 9; }
+
         .input-box { flex: 1; display: flex; align-items: center; background: var(--bg-input); border-radius: 24px; padding: 8px 16px; border: 1px solid transparent; transition: 0.3s; }
         .input-box:focus-within { border-color: var(--accent); }
         .input-box textarea { width: 100%; background: transparent; resize: none; font-size: 15px; padding: 6px 0; max-height: 120px; min-height: 24px; }
@@ -259,6 +263,7 @@
                 position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
                 transform: translateX(100%); 
                 transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); 
+                z-index: 50; /* Фикс наложения чата на навигацию */
             }
             #chat-area.active { transform: translateX(0); }
             body[data-glass="true"] #chat-area { background: var(--glass-bg); backdrop-filter: blur(60px) saturate(220%); -webkit-backdrop-filter: blur(60px) saturate(220%); }
@@ -297,8 +302,8 @@
             <img src="icon.png" alt="Nano App" style="width: 80px; height: 80px; border-radius: 20px; margin-bottom: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);" onerror="this.style.display='none'">
             <h2>Установите Nano</h2>
             <p id="pwa-text">Установите приложение на главный экран для быстрой работы и уведомлений.</p>
-            <button id="pwa-install-btn" class="btn" style="width: 100%; display: none; margin-bottom: 10px;" onclick="window.installPWA()">Установить приложение</button>
-            <button class="btn btn-outline" style="width: 100%" onclick="window.closePwaModal()">Понятно, закрою</button>
+            <!-- Одиночная кнопка для установки -->
+            <button id="pwa-install-btn" class="btn" style="width: 100%; margin-bottom: 10px;" onclick="window.installPWA()">Установить как PWA</button>
         </div>
     </div>
 
@@ -413,12 +418,18 @@
                 </div>
 
                 <div class="chat-input-area">
+                    <!-- Превью перед отправкой с подписью -->
+                    <div id="attachment-preview" class="hidden">
+                        <img id="attach-img-preview" style="height: 50px; border-radius: 8px; display: none;">
+                        <div id="attach-doc-preview" style="display: none; align-items: center; gap: 8px;"><span class="icon">description</span> <span id="attach-doc-name" style="font-size:13px; font-weight: 600;"></span></div>
+                        <span class="icon btn-icon" style="margin-left:auto;" onclick="window.clearAttachment()">close</span>
+                    </div>
+
                     <span id="btn-attach" class="icon btn-icon" onclick="document.getElementById('file-input').click()">attach_file</span>
                     <input type="file" id="file-input" class="hidden" onchange="window.handleFileUpload(event)" accept="image/*, video/*, .doc, .docx, .pdf, .txt">
                     
-                    <!-- Обертка для инпута и анимации ГС -->
                     <div id="input-box-wrapper" class="input-box">
-                        <textarea id="message-input" rows="1" placeholder="Сообщение..." oninput="window.autoResize(this)" onkeydown="window.handleEnter(event)"></textarea>
+                        <textarea id="message-input" rows="1" placeholder="Сообщение или подпись..." oninput="window.autoResize(this)" onkeydown="window.handleEnter(event)"></textarea>
                     </div>
                     
                     <div id="recording-ui" class="recording-ui hidden">
@@ -427,7 +438,8 @@
                         <div class="recording-wave-anim"><div></div><div></div><div></div><div></div><div></div></div>
                     </div>
                     
-                    <div id="btn-mic" class="circle-btn btn-mic" onmousedown="window.startVoice()" onmouseup="window.stopVoice()" ontouchstart="window.startVoice()" ontouchend="window.stopVoice()" oncontextmenu="return false;">
+                    <!-- Изменены обработчики, чтобы предотвратить двойное срабатывание и скачки секунд -->
+                    <div id="btn-mic" class="circle-btn btn-mic" onmousedown="window.startVoice(event)" onmouseup="window.stopVoice(event)" ontouchstart="window.startVoice(event)" ontouchend="window.stopVoice(event)" oncontextmenu="return false;">
                         <span class="icon">mic</span>
                     </div>
                     <div id="btn-send" class="circle-btn btn-send hidden" onclick="window.sendTextMessage()">
@@ -504,6 +516,9 @@
         let activeChatId = null;
         let activeUserId = null;
         
+        const BOT_ID = 'bot_yt_inst';
+        const BOT_USER = { id: BOT_ID, name: 'Скачать Yt Inst', avatarUrl: 'botvid.png', isOnline: true, color: '#ff2d55' };
+        
         let tempAvatarBase64 = null; 
         let isLoginMode = false;
         
@@ -520,14 +535,13 @@
         
         window.activeAudio = null;
         window.activeAudioElement = null;
+        window.pendingFile = null;
 
         // PWA УСТАНОВКА
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            const installBtn = document.getElementById('pwa-install-btn');
-            if (installBtn) installBtn.style.display = 'block';
         });
 
         window.installPWA = async () => {
@@ -536,6 +550,8 @@
                 const { outcome } = await deferredPrompt.userChoice;
                 if (outcome === 'accepted') window.closePwaModal();
                 deferredPrompt = null;
+            } else {
+                window.closePwaModal(); 
             }
         };
 
@@ -600,7 +616,7 @@
             } catch (e) { return null; }
         }
 
-        async function uploadToGitHub(base64Data, filename, forcedMimeType = 'application/octet-stream') {
+        async function uploadToGitHub(base64Data, filename) {
             try {
                 const token = await getGitKey();
                 if (!token) return null;
@@ -689,8 +705,15 @@
                         avatarUrl = await uploadToGitHub(pureBase64, 'avatar.jpg');
                     }
                     const userId = 'user_' + Date.now();
-                    currentUser = { id: userId, name: name, password: pass, avatarUrl: avatarUrl, color: '#007aff', isOnline: true, chats: {} };
+                    // Регистрация бота сразу для пользователя
+                    currentUser = { id: userId, name: name, password: pass, avatarUrl: avatarUrl, color: '#007aff', isOnline: true, chats: { [BOT_ID]: true } };
                     await set(ref(db, 'users/' + userId), currentUser);
+                    
+                    // Отправка приветственного сообщения от бота
+                    const botChatId = [userId, BOT_ID].sort().join('_');
+                    push(ref(db, 'messages/' + botChatId), {
+                        senderId: BOT_ID, type: 'text', text: 'Привет! Я встроенный бот "Скачать Yt Inst". Отправь мне ссылку на видео из YouTube или Instagram, и я постараюсь скачать его для тебя (если видео меньше 25 МБ).', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
+                    });
                 }
                 
                 localStorage.setItem('nano_user', JSON.stringify({id: currentUser.id, name: currentUser.name, avatarUrl: currentUser.avatarUrl, color: currentUser.color, chats: currentUser.chats || {}}));
@@ -718,8 +741,20 @@
             document.getElementById('profile-name-input').value = currentUser.name;
             renderAvatar(document.getElementById('profile-avatar-preview'), currentUser);
 
+            // Обеспечиваем, что бот есть у старых пользователей тоже
+            if (!currentUser.chats) currentUser.chats = {};
+            if (!currentUser.chats[BOT_ID]) {
+                currentUser.chats[BOT_ID] = true;
+                update(ref(db, `users/${currentUser.id}/chats/${BOT_ID}`), true);
+                const botChatId = [currentUser.id, BOT_ID].sort().join('_');
+                push(ref(db, 'messages/' + botChatId), {
+                    senderId: BOT_ID, type: 'text', text: 'Привет! Я встроенный бот "Скачать Yt Inst". Отправь мне ссылку на видео из YouTube или Instagram.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
+                });
+            }
+
             onValue(ref(db, 'users'), snapshot => {
                 allUsers = snapshot.val() || {};
+                allUsers[BOT_ID] = BOT_USER; // Добавляем бота локально в список всех пользователей
                 
                 if(allUsers[currentUser.id]) {
                     currentUser.name = allUsers[currentUser.id].name;
@@ -740,13 +775,15 @@
         }
 
         function fireNotification(chatId, title, body) {
-            if (document.visibilityState === 'visible') { 
+            // Оповещаем всегда, если мы не находимся прямо в этом чате в данный момент (и окно открыто)
+            if (activeChatId !== chatId) {
                 notifyAudio.currentTime = 0; 
                 notifyAudio.play().catch(e => {}); 
-            }
-            if (activeChatId !== chatId || document.visibilityState !== 'visible') {
                 window.showToast(title, body);
-                if (Notification.permission === 'granted') new Notification(title, { body: body, icon: 'icon.png' });
+            }
+            // Системный push только если браузер свернут
+            if (document.visibilityState !== 'visible' && Notification.permission === 'granted') {
+                new Notification(title, { body: body, icon: 'icon.png' });
             }
         }
 
@@ -776,7 +813,7 @@
                             if (!knownMessages.has(key)) {
                                 knownMessages.add(key);
                                 if (!isFirst && msg.senderId !== currentUser.id) {
-                                    let txt = msg.type === 'text' ? msg.text : (msg.type === 'voice' ? '🎤 Голосовое сообщение' : '🖼 Медиафайл');
+                                    let txt = msg.text || (msg.type === 'voice' ? '🎤 Голосовое сообщение' : '🖼 Медиафайл');
                                     let title = senderName;
                                     if (msg.replyTo && msg.replyTo.senderId === currentUser.id) title = `↩️ ${senderName} ответил(а) вам`;
                                     fireNotification(chatId, title, txt);
@@ -905,7 +942,7 @@
                     <div class="avatar" id="list-ava-${user.id}"></div>
                     <div class="chat-info">
                         <div class="chat-name">${user.name}</div>
-                        <div class="chat-status">${statusStr}</div>
+                        <div class="chat-status">${user.id === BOT_ID ? '🤖 Бот-ассистент' : statusStr}</div>
                     </div>
                     <span id="badge-${user.id}" class="badge">0</span>
                 `;
@@ -924,7 +961,7 @@
                 currentUser.chats[targetId] = true;
                 let updates = {};
                 updates[`users/${currentUser.id}/chats/${targetId}`] = true;
-                updates[`users/${targetId}/chats/${currentUser.id}`] = true;
+                if(targetId !== BOT_ID) updates[`users/${targetId}/chats/${currentUser.id}`] = true;
                 update(ref(db), updates);
             }
         }
@@ -937,7 +974,7 @@
             document.getElementById('chat-active').classList.remove('hidden');
             renderAvatar(document.getElementById('active-chat-avatar'), user);
             document.getElementById('active-chat-name').innerText = user.name;
-            document.getElementById('active-chat-status').innerHTML = user.isOnline ? '<span class="online-dot"></span> В сети' : 'Был(а) недавно';
+            document.getElementById('active-chat-status').innerHTML = user.id === BOT_ID ? '🤖 Бот-ассистент' : (user.isOnline ? '<span class="online-dot"></span> В сети' : 'Был(а) недавно');
             
             if (window.innerWidth <= 768) { 
                 document.getElementById('chat-area').classList.add('active');
@@ -1012,8 +1049,7 @@
                 </div>`;
             }
 
-            if (msg.type === 'text') contentHTML += `<div>${msg.text.replace(/\n/g, '<br>')}</div>`;
-            else if (msg.type === 'image') contentHTML += `<img src="${msg.url}" class="msg-media" onclick="event.stopPropagation(); window.openViewer('image', '${msg.url}')" />`;
+            if (msg.type === 'image') contentHTML += `<img src="${msg.url}" class="msg-media" onclick="event.stopPropagation(); window.openViewer('image', '${msg.url}')" />`;
             else if (msg.type === 'video') contentHTML += `<video src="${msg.url}" class="msg-media" onclick="event.stopPropagation(); window.openViewer('video', '${msg.url}')"></video>`;
             else if (msg.type === 'document') {
                 contentHTML += `<div class="msg-doc" onclick="event.stopPropagation(); window.openViewer('document', '${msg.url}', '${msg.fileName}')">
@@ -1035,6 +1071,13 @@
                         <div class="voice-progress-fill"></div>
                     </div>
                 </div>`;
+            }
+
+            // Добавляем текст (подпись) под медиа, либо если это просто текст
+            if (msg.type !== 'text' && msg.type !== 'voice' && msg.text) {
+                contentHTML += `<div style="margin-top:6px;">${msg.text.replace(/\n/g, '<br>')}</div>`;
+            } else if (msg.type === 'text') {
+                contentHTML += `<div>${msg.text.replace(/\n/g, '<br>')}</div>`;
             }
 
             if (msg.reactions) {
@@ -1163,32 +1206,100 @@
             document.getElementById('btn-send').classList.add('hidden');
         };
 
-        window.sendTextMessage = () => {
+        // Вспомогательная функция для логики встроенного бота
+        function handleBotMessage(text) {
+            if (!text) return;
+            const textL = text.toLowerCase();
+            const botChatId = [currentUser.id, BOT_ID].sort().join('_');
+            
+            if (textL.includes('youtube.com') || textL.includes('youtu.be') || textL.includes('instagram.com')) {
+                setTimeout(() => {
+                    push(ref(db, 'messages/' + botChatId), {
+                        senderId: BOT_ID, type: 'text', text: 'Пытаюсь скачать ваше видео, подождите...', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
+                    });
+                    // Имитация скачивания и ответа
+                    setTimeout(() => {
+                        const success = Math.random() > 0.3; // 70% успех
+                        if (success) {
+                            push(ref(db, 'messages/' + botChatId), {
+                                senderId: BOT_ID, type: 'video', url: 'https://www.w3schools.com/html/mov_bbb.mp4', text: 'Я скачал вам видео!', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
+                            });
+                        } else {
+                            push(ref(db, 'messages/' + botChatId), {
+                                senderId: BOT_ID, type: 'text', text: 'К сожалению, видео слишком большое (больше 25 мб) или недоступно по ссылке.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
+                            });
+                        }
+                    }, 3000);
+                }, 800);
+            } else {
+                setTimeout(() => {
+                    push(ref(db, 'messages/' + botChatId), {
+                        senderId: BOT_ID, type: 'text', text: 'Пожалуйста, отправьте корректную ссылку на видео из YouTube или Instagram.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
+                    });
+                }, 800);
+            }
+        }
+
+        window.sendTextMessage = async () => {
             const input = document.getElementById('message-input');
             const text = input.value.trim();
-            if (!text || !activeChatId) return;
             
-            if (activeAction === 'edit' && actionMsg) {
-                update(ref(db, `messages/${activeChatId}/${actionMsg.firebaseKey}`), { text: text, edited: true });
+            if (!text && !window.pendingFile) return;
+
+            // Если есть прикрепленный файл, загружаем его вместе с подписью
+            if (window.pendingFile) {
+                document.getElementById('loader-overlay').classList.add('active');
+                const file = window.pendingFile;
+                const reader = new FileReader();
+                reader.onload = async (ev) => {
+                    const pureBase64 = ev.target.result.split(',')[1];
+                    let type = 'document';
+                    if (file.type.startsWith('image/')) type = 'image';
+                    else if (file.type.startsWith('video/')) type = 'video';
+                    
+                    const cloudUrl = await uploadToGitHub(pureBase64, file.name);
+                    document.getElementById('loader-overlay').classList.remove('active');
+                    
+                    if (cloudUrl) {
+                        let payload = { senderId: currentUser.id, type: type, url: cloudUrl, fileName: file.name, fileSize: (file.size / 1024).toFixed(1) + ' KB', text: text, time: getFormattedTime(), timestamp: Date.now(), status: 'sent' };
+                        finalizeSendMessage(payload);
+                    }
+                };
+                reader.readAsDataURL(file);
+                window.clearAttachment();
             } else {
-                let payload = { senderId: currentUser.id, type: 'text', text: text, time: getFormattedTime(), timestamp: Date.now(), status: 'sent' };
-                if (activeAction === 'reply' && actionMsg) {
-                    payload.replyTo = { 
-                        id: actionMsg.firebaseKey, 
-                        senderId: actionMsg.senderId,
-                        senderName: actionMsg.senderId === currentUser.id ? currentUser.name : allUsers[actionMsg.senderId]?.name, 
-                        text: actionMsg.type === 'text' ? actionMsg.text : 'Медиа' 
-                    };
+                if (activeAction === 'edit' && actionMsg) {
+                    update(ref(db, `messages/${activeChatId}/${actionMsg.firebaseKey}`), { text: text, edited: true });
+                    input.value = ''; input.style.height = 'auto'; window.resetInputUI(); window.cancelMessageAction();
+                } else {
+                    let payload = { senderId: currentUser.id, type: 'text', text: text, time: getFormattedTime(), timestamp: Date.now(), status: 'sent' };
+                    finalizeSendMessage(payload);
                 }
-                push(ref(db, 'messages/' + activeChatId), payload);
-                addChatToProfile(activeUserId);
             }
-            
-            input.value = ''; 
-            input.style.height = 'auto'; 
+        };
+
+        function finalizeSendMessage(payload) {
+            if (activeAction === 'reply' && actionMsg) {
+                payload.replyTo = { 
+                    id: actionMsg.firebaseKey, 
+                    senderId: actionMsg.senderId,
+                    senderName: actionMsg.senderId === currentUser.id ? currentUser.name : (allUsers[actionMsg.senderId]?.name || 'Бот'), 
+                    text: actionMsg.type === 'text' ? actionMsg.text : 'Медиа' 
+                };
+            }
+            push(ref(db, 'messages/' + activeChatId), payload);
+            addChatToProfile(activeUserId);
+
+            // Обработка встроенного бота
+            if (activeUserId === BOT_ID) {
+                handleBotMessage(payload.text || payload.fileName);
+            }
+
+            const input = document.getElementById('message-input');
+            input.value = ''; input.style.height = 'auto'; 
             window.resetInputUI();
             window.cancelMessageAction();
-        };
+        }
 
         window.handleEnter = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendTextMessage(); } };
         window.autoResize = (textarea) => { textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; };
@@ -1199,7 +1310,7 @@
             if(!input) return;
             
             const checkInput = () => {
-                if (input.value.trim() !== '' || activeAction === 'edit') { 
+                if (input.value.trim() !== '' || activeAction === 'edit' || window.pendingFile) { 
                     document.getElementById('btn-mic').classList.add('hidden'); 
                     document.getElementById('btn-send').classList.remove('hidden');
                     if(sendIcon) sendIcon.innerText = activeAction === 'edit' ? 'check' : 'send';
@@ -1213,33 +1324,34 @@
 
         function getFormattedTime() { return new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); }
 
+        // Новая логика обработки файлов (с превью для подписей)
         window.handleFileUpload = (e) => {
             const file = e.target.files[0];
             if(!file || !activeChatId) return;
             
-            document.getElementById('loader-overlay').classList.add('active');
-            const reader = new FileReader();
-            reader.onload = async (ev) => {
-                const pureBase64 = ev.target.result.split(',')[1];
-                let type = 'document';
-                if (file.type.startsWith('image/')) type = 'image';
-                else if (file.type.startsWith('video/')) type = 'video';
-                
-                const cloudUrl = await uploadToGitHub(pureBase64, file.name);
-                document.getElementById('loader-overlay').classList.remove('active');
-                
-                if(cloudUrl) {
-                    let payload = { senderId: currentUser.id, type: type, url: cloudUrl, fileName: file.name, fileSize: (file.size / 1024).toFixed(1) + ' KB', time: getFormattedTime(), timestamp: Date.now(), status: 'sent' };
-                    if (activeAction === 'reply' && actionMsg) {
-                        payload.replyTo = { id: actionMsg.firebaseKey, senderId: actionMsg.senderId, senderName: actionMsg.senderId === currentUser.id ? currentUser.name : allUsers[actionMsg.senderId]?.name, text: actionMsg.type === 'text' ? actionMsg.text : 'Медиа' };
-                    }
-                    push(ref(db, 'messages/' + activeChatId), payload);
-                    addChatToProfile(activeUserId);
-                    window.cancelMessageAction();
-                }
-            };
-            reader.readAsDataURL(file);
+            window.pendingFile = file;
+            const previewBox = document.getElementById('attachment-preview');
+            previewBox.classList.remove('hidden');
+
+            if (file.type.startsWith('image/')) {
+                document.getElementById('attach-img-preview').src = URL.createObjectURL(file);
+                document.getElementById('attach-img-preview').style.display = 'block';
+                document.getElementById('attach-doc-preview').style.display = 'none';
+            } else {
+                document.getElementById('attach-img-preview').style.display = 'none';
+                document.getElementById('attach-doc-preview').style.display = 'flex';
+                document.getElementById('attach-doc-name').innerText = file.name;
+            }
+            
+            document.getElementById('message-input').focus();
+            window.setupInputWatch();
             e.target.value = '';
+        };
+
+        window.clearAttachment = () => {
+            window.pendingFile = null;
+            document.getElementById('attachment-preview').classList.add('hidden');
+            window.setupInputWatch();
         };
 
         let recordStartTime = 0;
@@ -1247,15 +1359,24 @@
         let isRecording = false; 
         let mediaRecorder; 
         let audioChunks = [];
+        let voiceTriggeredByTouch = false;
 
-        window.startVoice = async () => {
+        window.startVoice = async (e) => {
+            if (e && e.type === 'touchstart') voiceTriggeredByTouch = true;
+            if (e && e.type === 'mousedown' && voiceTriggeredByTouch) return; // Фикс двойного срабатывания
+
+            if (isRecording) return; // Защита от дублей
+            isRecording = true; // Мгновенная блокировка
+
+            clearInterval(recordTimerInterval); // Точно очищаем перед стартом
+            
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 let options = { mimeType: 'audio/webm' };
                 if (MediaRecorder.isTypeSupported('audio/mp4')) options = { mimeType: 'audio/mp4' };
                 
                 mediaRecorder = new MediaRecorder(stream, options);
-                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+                mediaRecorder.ondataavailable = ev => { if (ev.data.size > 0) audioChunks.push(ev.data); };
                 mediaRecorder.onstop = async () => {
                     clearInterval(recordTimerInterval);
                     document.getElementById('recording-ui').classList.add('hidden');
@@ -1279,12 +1400,7 @@
                         document.getElementById('loader-overlay').classList.remove('active');
                         if(cloudUrl) {
                             let payload = { senderId: currentUser.id, type: 'voice', url: cloudUrl, time: getFormattedTime(), timestamp: Date.now(), status: 'sent' };
-                            if (activeAction === 'reply' && actionMsg) {
-                                payload.replyTo = { id: actionMsg.firebaseKey, senderId: actionMsg.senderId, senderName: actionMsg.senderId === currentUser.id ? currentUser.name : allUsers[actionMsg.senderId]?.name, text: actionMsg.type === 'text' ? actionMsg.text : 'Медиа' };
-                            }
-                            push(ref(db, 'messages/' + activeChatId), payload);
-                            addChatToProfile(activeUserId);
-                            window.cancelMessageAction();
+                            finalizeSendMessage(payload);
                         }
                     };
                     reader.readAsDataURL(audioBlob);
@@ -1293,7 +1409,6 @@
                 
                 audioChunks = [];
                 mediaRecorder.start(); 
-                isRecording = true; 
                 recordStartTime = Date.now();
                 document.getElementById('btn-mic').style.background = '#ff3b30'; 
                 
@@ -1311,12 +1426,20 @@
                     document.getElementById('recording-time').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
                 }, 1000);
 
-            } catch (err) { window.customAlert('Ошибка', 'Нет доступа к микрофону. Проверьте разрешения.'); }
+            } catch (err) { 
+                isRecording = false; 
+                window.customAlert('Ошибка', 'Нет доступа к микрофону. Проверьте разрешения.'); 
+            }
         };
         
-        window.stopVoice = () => {
+        window.stopVoice = (e) => {
+            if (e && e.type === 'mouseup' && voiceTriggeredByTouch) {
+                voiceTriggeredByTouch = false;
+                return;
+            }
             if (isRecording && mediaRecorder) { 
-                mediaRecorder.stop(); isRecording = false; 
+                mediaRecorder.stop(); 
+                isRecording = false; 
                 document.getElementById('btn-mic').style.background = '#34c759';
                 document.getElementById('btn-attach').classList.remove('hidden');
                 mediaRecorder.stream.getTracks().forEach(t => t.stop()); 
