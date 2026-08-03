@@ -17,7 +17,6 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
 
     <style>
-        /* === КАСТОМНЫЕ СТИЛИ И СВЕТЛАЯ ТЕМА === */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; outline: none; }
         ::selection { background: var(--accent); color: #fff; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -118,7 +117,6 @@
         .msg-media { max-width: 100%; border-radius: 12px; cursor: pointer; margin-bottom: 4px; object-fit: cover; max-height: 300px; }
         .msg-doc { display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 12px; cursor: pointer; }
         
-        /* ПЛЕЕР ГС */
         .custom-voice-msg { display: flex; align-items: center; gap: 10px; padding: 4px; width: 220px; }
         .voice-play-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; }
         .message.outgoing .voice-play-btn { background: white; color: var(--accent); }
@@ -154,7 +152,6 @@
         .btn-send { background: var(--accent); color: white; }
         .btn-mic { background: #34c759; color: white; }
 
-        /* ИНТЕРФЕЙС ЗАПИСИ ГС */
         .recording-ui { flex: 1; display: flex; align-items: center; gap: 12px; color: #ff3b30; font-weight: 600; padding: 0 10px; }
         .recording-pulse { animation: recPulse 1s infinite; font-size: 20px; }
         @keyframes recPulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
@@ -270,7 +267,6 @@
         </div>
     </div>
 
-    <!-- PWA Инструкция с кнопкой -->
     <div id="pwa-modal" class="overlay">
         <div class="custom-modal">
             <span class="icon btn-icon" style="position: absolute; top: 10px; right: 10px;" onclick="window.closePwaModal()">close</span>
@@ -334,7 +330,6 @@
                         <span class="icon" id="theme-indicator" style="color: var(--text-muted);">toggle_off</span>
                     </div>
                     
-                    <!-- КНОПКА ЗАПРОСА УВЕДОМЛЕНИЙ -->
                     <div class="settings-item" onclick="window.requestNotifyPerms()">
                         <div style="display:flex; gap:12px;"><span class="icon">notifications</span><span>Включить Push-уведомления</span></div>
                         <span class="icon" style="color: var(--text-muted);">chevron_right</span>
@@ -447,8 +442,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getDatabase, ref, set, get, push, onValue, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-        
-        // SUPABASE SDK ДЛЯ ПОДПИСОК НА ПУШИ
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
         // 1. ИНИЦИАЛИЗАЦИЯ FIREBASE (Для чатов)
@@ -464,12 +457,18 @@
         const db = getDatabase(app);
         const GH_REPO = "domenosso/nano-mess-cloud";
 
-        // 2. ИНИЦИАЛИЗАЦИЯ SUPABASE (Вставьте ваши реальные данные)
+        // ЗАЩИТА: ПРОВЕРКА URL ДЛЯ SUPABASE, ЧТОБЫ СКРИПТ НЕ КРАШИЛСЯ
         const supabaseUrl = 'ВАШ_SUPABASE_URL'; // Пример: https://abcdef.supabase.co
         const supabaseKey = 'ВАШ_SUPABASE_ANON_KEY';
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        let supabase = null;
+        try {
+            if (supabaseUrl.startsWith('http')) {
+                supabase = createClient(supabaseUrl, supabaseKey);
+            }
+        } catch(e) {
+            console.warn("Supabase не инициализирован");
+        }
 
-        // 3. VAPID PUBLIC KEY ДЛЯ ПОДПИСКИ
         const PUBLIC_VAPID_KEY = 'BK_38eSEBDs0fNjln9KSf4DCGm3dth-RLMm-UNyfHHrZ_VBrfcvZ-w7XYfBZoLoYoWZFintPGbwj8esO_bMnCR4';
 
         let currentUser = null;
@@ -515,37 +514,30 @@
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                 return window.customAlert("Ошибка", "Ваш браузер не поддерживает Push-уведомления.");
             }
+            if (!supabase) return window.customAlert("Ошибка", "База уведомлений не настроена.");
 
             try {
-                // Регистрируем SW
                 const register = await navigator.serviceWorker.register('/sw.js');
-                
-                // Запрашиваем подписку
                 const subscription = await register.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
                 });
 
-                // Сохраняем в Supabase
-                const { error } = await supabase
-                    .from('push_subscriptions')
-                    .upsert([{ 
-                        user_id: currentUser.id, 
-                        subscription: subscription 
-                    }]);
+                const { error } = await supabase.from('push_subscriptions').upsert([{ 
+                    user_id: currentUser.id, 
+                    subscription: subscription 
+                }]);
                 
                 if(error) throw error;
-                
                 window.customAlert("Успешно", "Push-уведомления включены!");
             } catch (err) {
                 console.error("Ошибка подписки:", err);
-                window.customAlert("Ошибка", "Не удалось подписаться на уведомления.");
             }
         };
 
-        // ПУШИ: ФУНКЦИЯ ОТПРАВКИ НА VERCEL BACKEND
+        // ПУШИ: ФУНКЦИЯ ОТПРАВКИ
         window.sendPushToServer = async (receiverId, text) => {
-            if(receiverId === BOT_ID) return; // Боту пуши не нужны
+            if(receiverId === BOT_ID) return; 
             try {
                 await fetch('/api/send', {
                     method: 'POST',
@@ -564,9 +556,7 @@
         window.requestNotifyPerms = async () => {
             if ("Notification" in window) {
                 const p = await Notification.requestPermission();
-                if (p === "granted") {
-                    window.subscribeToPush(); // Если разрешил - подписываем
-                }
+                if (p === "granted") window.subscribeToPush();
             }
         };
 
@@ -672,7 +662,7 @@
         window.onload = () => {
             const params = new URLSearchParams(window.location.search);
             const duoUser = params.get('duouser');
-            initTheme();
+            initTheme(); 
             
             if (duoUser) {
                 document.getElementById('duo-btn').style.display = 'none';
@@ -806,7 +796,6 @@
         }
 
         function fireNotification(chatId, title, body) {
-            // Внутренние уведомления
             if (activeChatId !== chatId) {
                 notifyAudio.currentTime = 0; 
                 notifyAudio.play().catch(e => {}); 
@@ -1349,7 +1338,6 @@
             }
             push(ref(db, 'messages/' + activeChatId), payload);
             
-            // ВЫЗЫВАЕМ ФУНКЦИЮ ОТПРАВКИ PUSH-УВЕДОМЛЕНИЯ ПОЛУЧАТЕЛЮ
             let pushText = payload.text || 'Отправил(а) медиафайл';
             window.sendPushToServer(activeUserId, pushText);
 
