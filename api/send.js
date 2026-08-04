@@ -16,7 +16,7 @@ module.exports = async function handler(req, res) {
 
         // 2. Инициализация (перенесена внутрь функции)
         webpush.setVapidDetails(
-            'mailto:test@example.com',
+            'paveltukhtin3@gmail.com',
             process.env.VAPID_PUBLIC_KEY,
             process.env.VAPID_PRIVATE_KEY
         );
