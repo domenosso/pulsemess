@@ -2,21 +2,19 @@ const webpush = require('web-push');
 const { createClient } = require('@supabase/supabase-js');
 
 module.exports = async function handler(req, res) {
-    // Разрешаем только POST-запросы
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
     try {
-        // 1. ЖЕСТКАЯ ПРОВЕРКА ПЕРЕМЕННЫХ (чтобы сразу понять, если ключи забыли добавить в Vercel)
         if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY || !process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
             console.error("ОШИБКА: Не хватает переменных окружения (Environment Variables) в Vercel!");
             return res.status(500).json({ error: 'Server configuration error: missing env variables' });
         }
 
-        // 2. Инициализация (перенесена внутрь функции)
+        // ОБЯЗАТЕЛЬНО: укажите здесь вашу настоящую почту!
         webpush.setVapidDetails(
-            'paveltukhtin3@gmail.com',
+            'mailto:paveltukhtin3@gmail.com', 
             process.env.VAPID_PUBLIC_KEY,
             process.env.VAPID_PRIVATE_KEY
         );
@@ -28,7 +26,6 @@ module.exports = async function handler(req, res) {
 
         const { receiverId, title, body } = req.body;
 
-        // 3. Ищем подписки пользователя
         const { data, error } = await supabase
             .from('push_subscriptions')
             .select('subscription')
@@ -43,11 +40,18 @@ module.exports = async function handler(req, res) {
             return res.status(404).json({ error: 'Subscription not found for this user' });
         }
 
-        // 4. Отправляем пуши
         const payload = JSON.stringify({ title, body });
         
+        // Эта настройка "пробивает" сон телефона на Android/iOS
+        const pushOptions = {
+            TTL: 60, 
+            headers: {
+                'Urgency': 'high' 
+            }
+        };
+
         const pushPromises = data.map(subRecord => 
-            webpush.sendNotification(subRecord.subscription, payload)
+            webpush.sendNotification(subRecord.subscription, payload, pushOptions)
                 .catch(e => console.error('Push provider rejected:', e))
         );
 
@@ -55,7 +59,6 @@ module.exports = async function handler(req, res) {
 
         return res.status(200).json({ success: true });
     } catch (err) {
-        // Ловим любые другие ошибки и отдаем их текст (поможет при дебаге)
         console.error('Fatal API Error:', err);
         return res.status(500).json({ error: err.message || 'Internal Server Error' });
     }
