@@ -9,7 +9,6 @@
     <meta name="theme-color" content="#ffffff" id="theme-color-meta">
     
     <title>Nano</title>
-    <!-- ПОДКЛЮЧАЕМ MANIFEST ДЛЯ PWA -->
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="icon.png">
 
@@ -292,7 +291,7 @@
             <input type="file" id="auth-avatar-input" hidden accept="image/*" onchange="window.handleAvatarSelect(event, 'auth-avatar-preview')">
             
             <div class="input-group">
-                <label>Логин (Ваше имя)</label>
+                <label>Логин (Ва Ваше имя)</label>
                 <input type="text" id="auth-name" placeholder="Введите логин..." autocomplete="off">
             </div>
 
@@ -411,7 +410,6 @@
         </main>
     </div>
 
-    <!-- Модалка просмотра файлов -->
     <div id="viewer-overlay" class="overlay" onclick="window.closeViewer()">
         <div class="viewer-content" onclick="event.stopPropagation()">
             <div style="width: 100%; display: flex; justify-content: flex-end; margin-bottom: -10px;">
@@ -446,7 +444,6 @@
         import { getDatabase, ref, set, get, push, onValue, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-        // 1. ИНИЦИАЛИЗАЦИЯ FIREBASE (Для чатов)
         const firebaseConfig = {
             apiKey: "AIzaSyBp3rh42vhASN-6eK6Tm7zmUXuEwG3pfHY",
             authDomain: "anonmessage-cfd86.firebaseapp.com",
@@ -459,9 +456,8 @@
         const db = getDatabase(app);
         const GH_REPO = "domenosso/nano-mess-cloud";
 
-        // ВСТАВЬТЕ СЮДА ВАШИ КЛЮЧИ ОТ SUPABASE
-        const supabaseUrl = 'https://chfyuqlvmvpaemwmrpco.supabase.co'; // Пример: https://abcdef.supabase.co
-        const supabaseKey = 'sb_publishable_SBeeXZRxEly7pQty_aJKsQ_mzk-cIdS'; 
+        const supabaseUrl = 'https://chfyuqlvmvpaemwmrpco.supabase.co';
+        const supabaseKey = 'sb_publishable_SBeeXZRxEly7pQty_aJKsQ_mzk-cIdS';
         
         let supabase = null;
         try {
@@ -478,9 +474,6 @@
         let allUsers = {};
         let activeChatId = null;
         let activeUserId = null;
-        
-        const BOT_ID = 'bot_yt_inst';
-        const BOT_USER = { id: BOT_ID, name: 'Скачать Yt Inst', avatarUrl: 'botvid.png', isOnline: true, color: '#ff2d55' };
         
         let tempAvatarBase64 = null; 
         let isLoginMode = false;
@@ -500,7 +493,6 @@
         window.activeAudioElement = null;
         window.pendingFile = null;
 
-        // ПУШИ: КОНВЕРТЕР КЛЮЧА
         function urlBase64ToUint8Array(base64String) {
             const padding = '='.repeat((4 - base64String.length % 4) % 4);
             const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
@@ -512,7 +504,6 @@
             return outputArray;
         }
 
-        // ПУШИ: ФУНКЦИЯ ПОДПИСКИ
         window.subscribeToPush = async () => {
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                 return window.customAlert("Ошибка", "Ваш браузер не поддерживает Push-уведомления.");
@@ -526,7 +517,10 @@
                     applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
                 });
 
-                const { error } = await supabase.from('push_subscriptions').upsert([{ 
+                // Удаляем старые подписки для этого аккаунта, чтобы избежать дублей пушей на одном устройстве
+                await supabase.from('push_subscriptions').delete().eq('user_id', currentUser.id);
+
+                const { error } = await supabase.from('push_subscriptions').insert([{ 
                     user_id: currentUser.id, 
                     subscription: subscription 
                 }]);
@@ -538,9 +532,7 @@
             }
         };
 
-        // ПУШИ: ФУНКЦИЯ ОТПРАВКИ
         window.sendPushToServer = async (receiverId, text) => {
-            if(receiverId === BOT_ID) return; 
             try {
                 await fetch('/api/send', {
                     method: 'POST',
@@ -731,13 +723,8 @@
                     }
                     const userId = 'user_' + Date.now();
                     
-                    currentUser = { id: userId, name: name, password: pass, avatarUrl: avatarUrl, color: '#007aff', isOnline: true, chats: { [BOT_ID]: true } };
+                    currentUser = { id: userId, name: name, password: pass, avatarUrl: avatarUrl, color: '#007aff', isOnline: true, chats: {} };
                     await set(ref(db, 'users/' + userId), currentUser);
-                    
-                    const botChatId = [userId, BOT_ID].sort().join('_');
-                    push(ref(db, 'messages/' + botChatId), {
-                        senderId: BOT_ID, type: 'text', text: 'Привет! Я встроенный бот "Скачать Yt Inst". Отправь мне ссылку на видео из YouTube, Shorts, TikTok или Instagram.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
-                    });
                 }
                 
                 localStorage.setItem('nano_user', JSON.stringify({id: currentUser.id, name: currentUser.name, avatarUrl: currentUser.avatarUrl, color: currentUser.color, chats: currentUser.chats || {}}));
@@ -765,20 +752,8 @@
             document.getElementById('profile-name-input').value = currentUser.name;
             renderAvatar(document.getElementById('profile-avatar-preview'), currentUser);
 
-            if (!currentUser.chats) currentUser.chats = {};
-            if (!currentUser.chats[BOT_ID]) {
-                currentUser.chats[BOT_ID] = true;
-                set(ref(db, `users/${currentUser.id}/chats/${BOT_ID}`), true);
-                
-                const botChatId = [currentUser.id, BOT_ID].sort().join('_');
-                push(ref(db, 'messages/' + botChatId), {
-                    senderId: BOT_ID, type: 'text', text: 'Привет! Я встроенный бот "Скачать Yt Inst". Отправь мне ссылку на видео из YouTube, Shorts, TikTok или Instagram.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
-                });
-            }
-
             onValue(ref(db, 'users'), snapshot => {
                 allUsers = snapshot.val() || {};
-                allUsers[BOT_ID] = BOT_USER; 
                 
                 if(allUsers[currentUser.id]) {
                     currentUser.name = allUsers[currentUser.id].name;
@@ -799,7 +774,6 @@
         }
 
         function fireNotification(chatId, title, body) {
-            // Внутренние уведомления (вкладка открыта)
             if (activeChatId !== chatId) {
                 notifyAudio.currentTime = 0; 
                 notifyAudio.play().catch(e => {}); 
@@ -953,7 +927,7 @@
                     <div class="avatar" id="list-ava-${user.id}"></div>
                     <div class="chat-info">
                         <div class="chat-name">${user.name}</div>
-                        <div class="chat-status">${user.id === BOT_ID ? '🤖 Бот-ассистент' : statusStr}</div>
+                        <div class="chat-status">${statusStr}</div>
                     </div>
                     <span id="badge-${user.id}" class="badge">0</span>
                 `;
@@ -971,7 +945,7 @@
             if (!currentUser.chats[targetId]) {
                 currentUser.chats[targetId] = true;
                 set(ref(db, `users/${currentUser.id}/chats/${targetId}`), true);
-                if(targetId !== BOT_ID) set(ref(db, `users/${targetId}/chats/${currentUser.id}`), true);
+                set(ref(db, `users/${targetId}/chats/${currentUser.id}`), true);
             }
         }
 
@@ -983,7 +957,7 @@
             document.getElementById('chat-active').classList.remove('hidden');
             renderAvatar(document.getElementById('active-chat-avatar'), user);
             document.getElementById('active-chat-name').innerText = user.name;
-            document.getElementById('active-chat-status').innerHTML = user.id === BOT_ID ? '🤖 Бот-ассистент' : (user.isOnline ? '<span class="online-dot"></span> В сети' : 'Был(а) недавно');
+            document.getElementById('active-chat-status').innerHTML = user.isOnline ? '<span class="online-dot"></span> В сети' : 'Был(а) недавно';
             
             if (window.innerWidth <= 768) { 
                 document.getElementById('chat-area').classList.add('active');
@@ -1214,86 +1188,6 @@
             document.getElementById('btn-send').classList.add('hidden');
         };
 
-        async function fetchWithFallback(url) {
-            const payload = JSON.stringify({ url: url, filenamePattern: "classic" });
-            const endpoints = [
-                "https://corsproxy.io/?" + encodeURIComponent("https://api.cobalt.tools/"),
-                "https://corsproxy.io/?" + encodeURIComponent("https://cobalt-api.peuk.dev/api/json"),
-                "https://corsproxy.io/?" + encodeURIComponent("https://cobalt.owo.si/api/json")
-            ];
-
-            for (let endpoint of endpoints) {
-                try {
-                    const res = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: payload
-                    });
-                    
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data && data.url) return data; 
-                        if (data && data.status !== "error") return data; 
-                    }
-                } catch (e) {}
-            }
-            return null;
-        }
-
-        function handleBotMessage(text) {
-            if (!text) return;
-            const botChatId = [currentUser.id, BOT_ID].sort().join('_');
-            
-            const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
-            if (!urlMatch) {
-                setTimeout(() => {
-                    push(ref(db, 'messages/' + botChatId), {
-                        senderId: BOT_ID, type: 'text', text: 'Пожалуйста, отправьте корректную ссылку на видео (YouTube, Instagram, TikTok, Twitter).', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
-                    });
-                }, 800);
-                return;
-            }
-            
-            const targetUrl = urlMatch[0];
-            
-            setTimeout(async () => {
-                push(ref(db, 'messages/' + botChatId), {
-                    senderId: BOT_ID, type: 'text', text: 'Ищу медиа по ссылке, подождите...', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
-                });
-                
-                try {
-                    const data = await fetchWithFallback(targetUrl);
-                    if (data) {
-                        let resultUrl = data.url;
-                        
-                        if (!resultUrl && data.picker && data.picker.length > 0) {
-                            const videoItem = data.picker.find(p => p.type === 'video');
-                            resultUrl = videoItem ? videoItem.url : data.picker[0].url;
-                        }
-                        
-                        if (resultUrl) {
-                            let resultText = data.text ? data.text : 'Я скачал ваше медиа!';
-                            push(ref(db, 'messages/' + botChatId), {
-                                senderId: BOT_ID, type: 'video', url: resultUrl, text: resultText, time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
-                            });
-                            return;
-                        }
-                    }
-                    
-                    push(ref(db, 'messages/' + botChatId), {
-                        senderId: BOT_ID, type: 'text', text: 'К сожалению, не удалось скачать видео. Оно закрыто настройками приватности или недоступно.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
-                    });
-                } catch(err) {
-                     push(ref(db, 'messages/' + botChatId), {
-                        senderId: BOT_ID, type: 'text', text: 'Произошла ошибка при загрузке. Попробуйте другую ссылку.', time: getFormattedTime(), timestamp: Date.now(), status: 'sent'
-                    });
-                }
-            }, 800);
-        }
-
         window.sendTextMessage = async () => {
             const input = document.getElementById('message-input');
             const text = input.value.trim();
@@ -1336,21 +1230,16 @@
                 payload.replyTo = { 
                     id: actionMsg.firebaseKey, 
                     senderId: actionMsg.senderId,
-                    senderName: actionMsg.senderId === currentUser.id ? currentUser.name : (allUsers[actionMsg.senderId]?.name || 'Бот'), 
+                    senderName: actionMsg.senderId === currentUser.id ? currentUser.name : allUsers[actionMsg.senderId]?.name, 
                     text: actionMsg.type === 'text' ? actionMsg.text : 'Медиа' 
                 };
             }
             push(ref(db, 'messages/' + activeChatId), payload);
             
-            // ВЫЗЫВАЕМ ФУНКЦИЮ ОТПРАВКИ PUSH-УВЕДОМЛЕНИЯ ПОЛУЧАТЕЛЮ
             let pushText = payload.text || 'Отправил(а) медиафайл';
             window.sendPushToServer(activeUserId, pushText);
 
             addChatToProfile(activeUserId);
-
-            if (activeUserId === BOT_ID) {
-                handleBotMessage(payload.text || payload.fileName);
-            }
 
             const input = document.getElementById('message-input');
             input.value = ''; input.style.height = 'auto'; 
@@ -1412,31 +1301,40 @@
 
         let recordStartTime = 0;
         let recordTimerInterval = null;
-        let isRecording = false; 
+        let isRecording = false;
+        let isUploadingVoice = false; 
         let mediaRecorder; 
         let audioChunks = [];
         let voiceTriggeredByTouch = false;
+        let globalAudioStream = null;
 
         window.startVoice = async (e) => {
             if (e && e.type === 'touchstart') voiceTriggeredByTouch = true;
             if (e && e.type === 'mousedown' && voiceTriggeredByTouch) return; 
 
-            if (isRecording) return; 
+            if (isRecording || isUploadingVoice) return; 
             isRecording = true; 
 
             clearInterval(recordTimerInterval); 
+            audioChunks = [];
             
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                if (!globalAudioStream) {
+                    globalAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                }
+                
                 let options = { mimeType: 'audio/webm' };
                 if (MediaRecorder.isTypeSupported('audio/mp4')) options = { mimeType: 'audio/mp4' };
                 
-                mediaRecorder = new MediaRecorder(stream, options);
+                mediaRecorder = new MediaRecorder(globalAudioStream, options);
                 mediaRecorder.ondataavailable = ev => { if (ev.data.size > 0) audioChunks.push(ev.data); };
                 mediaRecorder.onstop = async () => {
+                    isRecording = false;
                     clearInterval(recordTimerInterval);
                     document.getElementById('recording-ui').classList.add('hidden');
                     document.getElementById('input-box-wrapper').classList.remove('hidden');
+                    document.getElementById('btn-mic').style.background = '#34c759'; 
+                    document.getElementById('btn-attach').classList.remove('hidden');
                     
                     const duration = Date.now() - recordStartTime;
                     if (duration < 2000) {
@@ -1445,15 +1343,19 @@
                         return;
                     }
 
+                    isUploadingVoice = true;
+                    document.getElementById('loader-overlay').classList.add('active');
+
                     const ext = mediaRecorder.mimeType.includes('mp4') ? 'mp4' : 'webm';
                     const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
                     const reader = new FileReader();
                     
                     reader.onloadend = async () => {
                         const pureBase64 = reader.result.split(',')[1];
-                        document.getElementById('loader-overlay').classList.add('active');
                         const cloudUrl = await uploadToGitHub(pureBase64, 'voice.' + ext);
                         document.getElementById('loader-overlay').classList.remove('active');
+                        isUploadingVoice = false;
+
                         if(cloudUrl) {
                             let payload = { senderId: currentUser.id, type: 'voice', url: cloudUrl, time: getFormattedTime(), timestamp: Date.now(), status: 'sent' };
                             finalizeSendMessage(payload);
@@ -1463,7 +1365,6 @@
                     audioChunks = [];
                 };
                 
-                audioChunks = [];
                 mediaRecorder.start(); 
                 recordStartTime = Date.now();
                 document.getElementById('btn-mic').style.background = '#ff3b30'; 
@@ -1483,7 +1384,7 @@
 
             } catch (err) { 
                 isRecording = false; 
-                window.customAlert('Ошибка', 'Нет доступа к микрофону. Проверьте разрешения.'); 
+                window.customAlert('Ошибка', 'Нет доступа к микрофону. Разрешите его в настройках.'); 
             }
         };
         
@@ -1492,12 +1393,8 @@
                 voiceTriggeredByTouch = false;
                 return;
             }
-            if (isRecording && mediaRecorder) { 
+            if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') { 
                 mediaRecorder.stop(); 
-                isRecording = false; 
-                document.getElementById('btn-mic').style.background = '#34c759';
-                document.getElementById('btn-attach').classList.remove('hidden');
-                mediaRecorder.stream.getTracks().forEach(t => t.stop()); 
             }
         };
 
