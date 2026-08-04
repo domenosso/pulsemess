@@ -9,6 +9,8 @@
     <meta name="theme-color" content="#ffffff" id="theme-color-meta">
     
     <title>Nano</title>
+    <!-- ПОДКЛЮЧАЕМ MANIFEST ДЛЯ PWA -->
+    <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="icon.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -273,7 +275,7 @@
             <img src="icon.png" alt="Nano App" style="width: 80px; height: 80px; border-radius: 20px; margin-bottom: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);" onerror="this.style.display='none'">
             <h2>Установите Nano</h2>
             <p id="pwa-text">Установите приложение на главный экран для быстрой работы и уведомлений.</p>
-            <button id="pwa-install-btn" class="btn" style="width: 100%; margin-bottom: 10px;" onclick="window.installPWA()">Установить как PWA</button>
+            <button id="pwa-install-btn" class="btn" style="width: 100%; margin-bottom: 10px;" onclick="window.installPWA()">Установить приложение</button>
         </div>
     </div>
 
@@ -457,9 +459,10 @@
         const db = getDatabase(app);
         const GH_REPO = "domenosso/nano-mess-cloud";
 
-        // ЗАЩИТА: ПРОВЕРКА URL ДЛЯ SUPABASE, ЧТОБЫ СКРИПТ НЕ КРАШИЛСЯ
+        // ВСТАВЬТЕ СЮДА ВАШИ КЛЮЧИ ОТ SUPABASE
         const supabaseUrl = 'https://chfyuqlvmvpaemwmrpco.supabase.co'; // Пример: https://abcdef.supabase.co
-        const supabaseKey = 'sb_publishable_SBeeXZRxEly7pQty_aJKsQ_mzk-cIdS';
+        const supabaseKey = 'sb_publishable_SBeeXZRxEly7pQty_aJKsQ_mzk-cIdS'; 
+        
         let supabase = null;
         try {
             if (supabaseUrl.startsWith('http')) {
@@ -514,7 +517,7 @@
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                 return window.customAlert("Ошибка", "Ваш браузер не поддерживает Push-уведомления.");
             }
-            if (!supabase) return window.customAlert("Ошибка", "База уведомлений не настроена.");
+            if (!supabase) return window.customAlert("Ошибка", "База уведомлений (Supabase) не настроена в коде.");
 
             try {
                 const register = await navigator.serviceWorker.register('/sw.js');
@@ -796,6 +799,7 @@
         }
 
         function fireNotification(chatId, title, body) {
+            // Внутренние уведомления (вкладка открыта)
             if (activeChatId !== chatId) {
                 notifyAudio.currentTime = 0; 
                 notifyAudio.play().catch(e => {}); 
@@ -1338,6 +1342,7 @@
             }
             push(ref(db, 'messages/' + activeChatId), payload);
             
+            // ВЫЗЫВАЕМ ФУНКЦИЮ ОТПРАВКИ PUSH-УВЕДОМЛЕНИЯ ПОЛУЧАТЕЛЮ
             let pushText = payload.text || 'Отправил(а) медиафайл';
             window.sendPushToServer(activeUserId, pushText);
 
