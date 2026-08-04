@@ -291,7 +291,7 @@
             <input type="file" id="auth-avatar-input" hidden accept="image/*" onchange="window.handleAvatarSelect(event, 'auth-avatar-preview')">
             
             <div class="input-group">
-                <label>Логин (Ва Ваше имя)</label>
+                <label>Логин (Ваше имя)</label>
                 <input type="text" id="auth-name" placeholder="Введите логин..." autocomplete="off">
             </div>
 
@@ -410,6 +410,7 @@
         </main>
     </div>
 
+    <!-- Модалка просмотра файлов -->
     <div id="viewer-overlay" class="overlay" onclick="window.closeViewer()">
         <div class="viewer-content" onclick="event.stopPropagation()">
             <div style="width: 100%; display: flex; justify-content: flex-end; margin-bottom: -10px;">
@@ -517,15 +518,19 @@
                     applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
                 });
 
-                // Удаляем старые подписки для этого аккаунта, чтобы избежать дублей пушей на одном устройстве
-                await supabase.from('push_subscriptions').delete().eq('user_id', currentUser.id);
-
-                const { error } = await supabase.from('push_subscriptions').insert([{ 
-                    user_id: currentUser.id, 
-                    subscription: subscription 
-                }]);
+                // Получаем все подписки для текущего пользователя
+                const { data: existing } = await supabase.from('push_subscriptions').select('*').eq('user_id', currentUser.id);
                 
-                if(error) throw error;
+                // Проверяем, есть ли уже этот телефон (endpoint) в базе
+                const isExist = existing && existing.find(sub => sub.subscription?.endpoint === subscription.endpoint);
+
+                if (!isExist) {
+                    await supabase.from('push_subscriptions').insert([{ 
+                        user_id: currentUser.id, 
+                        subscription: subscription 
+                    }]);
+                }
+                
                 window.customAlert("Успешно", "Push-уведомления включены!");
             } catch (err) {
                 console.error("Ошибка подписки:", err);
@@ -738,10 +743,16 @@
             }
         };
 
+        // НАДЕЖНЫЙ КОНТРОЛЬ ПРИСУТСТВИЯ ЧЕРЕЗ .info/connected
         function setupPresence() {
-            const myStatusRef = ref(db, 'users/' + currentUser.id + '/isOnline');
-            set(myStatusRef, true);
-            onDisconnect(myStatusRef).set(false);
+            const connectedRef = ref(db, ".info/connected");
+            onValue(connectedRef, (snap) => {
+                if (snap.val() === true) {
+                    const myStatusRef = ref(db, 'users/' + currentUser.id + '/isOnline');
+                    set(myStatusRef, true);
+                    onDisconnect(myStatusRef).set(false);
+                }
+            });
         }
 
         function showApp() {
@@ -1230,7 +1241,7 @@
                 payload.replyTo = { 
                     id: actionMsg.firebaseKey, 
                     senderId: actionMsg.senderId,
-                    senderName: actionMsg.senderId === currentUser.id ? currentUser.name : allUsers[actionMsg.senderId]?.name, 
+                    senderName: actionMsg.senderId === currentUser.id ? currentUser.name : (allUsers[actionMsg.senderId]?.name || 'Пользователь'), 
                     text: actionMsg.type === 'text' ? actionMsg.text : 'Медиа' 
                 };
             }
