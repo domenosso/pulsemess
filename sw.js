@@ -1,46 +1,38 @@
-// Принудительно обновляем старый Service Worker
 self.addEventListener('install', (event) => {
-    self.skipWaiting();
+    self.skipWaiting(); // Принудительно обновляет старые воркеры на телефонах
 });
 
 self.addEventListener('activate', (event) => {
     event.waitUntil(clients.claim());
 });
 
-self.addEventListener('push', function(event) {
-    console.log("[SW] 🔔 ПРИШЕЛ PUSH-СИГНАЛ!");
-    
-    // Значения по умолчанию, если что-то пойдет не так
-    let title = "Nano Messenger";
-    let body = "Новое сообщение!";
+self.addEventListener('push', (event) => {
+    let pushTitle = 'Nano Messenger';
+    let pushBody = 'Новое сообщение';
 
-    if (event.data) {
-        try {
+    // Безопасный парсинг (не упадет, даже если пришел кривой формат)
+    try {
+        if (event.data) {
             const data = event.data.json();
-            title = data.title || title;
-            body = data.body || body;
-        } catch (e) {
-            body = event.data.text();
+            pushTitle = data.title || pushTitle;
+            pushBody = data.body || pushBody;
         }
+    } catch (e) {
+        if (event.data) pushBody = event.data.text();
     }
 
     const options = {
-        body: body,
-        icon: '/icon.png', // Убедитесь, что файл icon.png существует на Vercel
-        badge: '/icon.png',
-        vibrate: [200, 100, 200],
-        requireInteraction: true, // Уведомление не исчезнет само
-        data: { url: '/' }
+        body: pushBody,
+        vibrate: [200, 100, 200, 100, 200], // Длинная вибрация, чтобы точно заметить
+        requireInteraction: true // Пуш не исчезнет сам, пока на него не нажмут
     };
 
     event.waitUntil(
-        self.registration.showNotification(title, options)
+        self.registration.showNotification(pushTitle, options)
     );
 });
 
-self.addEventListener('notificationclick', function(event) {
+self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    event.waitUntil(
-        clients.openWindow(event.notification.data.url)
-    );
+    event.waitUntil(clients.openWindow('/'));
 });
