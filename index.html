@@ -141,7 +141,7 @@
         .action-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; font-size: 13px; color: var(--text-muted); z-index: 10; }
         .action-bar-content { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 10px; border-left: 3px solid var(--accent); margin-left: 4px; padding-left: 10px; }
 
-        .chat-input-area { position: relative; padding: 12px 20px; display: flex; align-items: flex-end; gap: 12px; z-index: 10; min-height: 68px; }
+        .chat-input-area { position: relative; padding: 12px 20px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); display: flex; align-items: flex-end; gap: 12px; z-index: 10; min-height: 68px; }
         
         #attachment-preview { position: absolute; bottom: 100%; left: 0; width: 100%; padding: 10px 20px; display: flex; align-items: center; gap: 10px; z-index: 9; }
 
@@ -518,10 +518,9 @@
                     applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
                 });
 
-                // Получаем все подписки для текущего пользователя
+                // Проверяем наличие подписки перед добавлением (без использования delete)
                 const { data: existing } = await supabase.from('push_subscriptions').select('*').eq('user_id', currentUser.id);
                 
-                // Проверяем, есть ли уже этот телефон (endpoint) в базе
                 const isExist = existing && existing.find(sub => sub.subscription?.endpoint === subscription.endpoint);
 
                 if (!isExist) {
@@ -743,8 +742,8 @@
             }
         };
 
-        // НАДЕЖНЫЙ КОНТРОЛЬ ПРИСУТСТВИЯ ЧЕРЕЗ .info/connected
         function setupPresence() {
+            // Подключаемся к системному каналу Firebase, который знает статус интернета
             const connectedRef = ref(db, ".info/connected");
             onValue(connectedRef, (snap) => {
                 if (snap.val() === true) {
@@ -1317,7 +1316,6 @@
         let mediaRecorder; 
         let audioChunks = [];
         let voiceTriggeredByTouch = false;
-        let globalAudioStream = null;
 
         window.startVoice = async (e) => {
             if (e && e.type === 'touchstart') voiceTriggeredByTouch = true;
@@ -1330,14 +1328,12 @@
             audioChunks = [];
             
             try {
-                if (!globalAudioStream) {
-                    globalAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                }
+                // На iOS Safari лучше запрашивать поток каждый раз, чтобы он не "засыпал"
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 
-                let options = { mimeType: 'audio/webm' };
-                if (MediaRecorder.isTypeSupported('audio/mp4')) options = { mimeType: 'audio/mp4' };
+                // Оставляем формат по умолчанию (браузер сам выберет лучший поддерживаемый формат, на iOS это mp4)
+                mediaRecorder = new MediaRecorder(stream);
                 
-                mediaRecorder = new MediaRecorder(globalAudioStream, options);
                 mediaRecorder.ondataavailable = ev => { if (ev.data.size > 0) audioChunks.push(ev.data); };
                 mediaRecorder.onstop = async () => {
                     isRecording = false;
@@ -1346,6 +1342,9 @@
                     document.getElementById('input-box-wrapper').classList.remove('hidden');
                     document.getElementById('btn-mic').style.background = '#34c759'; 
                     document.getElementById('btn-attach').classList.remove('hidden');
+                    
+                    // Освобождаем микрофон после записи
+                    stream.getTracks().forEach(t => t.stop());
                     
                     const duration = Date.now() - recordStartTime;
                     if (duration < 2000) {
@@ -1357,8 +1356,9 @@
                     isUploadingVoice = true;
                     document.getElementById('loader-overlay').classList.add('active');
 
+                    // Определяем расширение по реальному mimeType
                     const ext = mediaRecorder.mimeType.includes('mp4') ? 'mp4' : 'webm';
-                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/mp4' });
                     const reader = new FileReader();
                     
                     reader.onloadend = async () => {
