@@ -506,6 +506,7 @@
         }
 
         window.subscribeToPush = async () => {
+            console.log("[PUSH] Начинаем процесс подписки...");
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                 return window.customAlert("Ошибка", "Ваш браузер не поддерживает Push-уведомления.");
             }
@@ -513,32 +514,39 @@
 
             try {
                 const register = await navigator.serviceWorker.register('/sw.js');
+                console.log("[PUSH] Service Worker зарегистрирован:", register);
+                
                 const subscription = await register.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
                 });
+                console.log("[PUSH] Подписка от браузера получена:", subscription);
 
-                // Проверяем наличие подписки перед добавлением (без использования delete)
+                console.log("[PUSH] Ищем существующие подписки в Supabase...");
                 const { data: existing } = await supabase.from('push_subscriptions').select('*').eq('user_id', currentUser.id);
                 
                 const isExist = existing && existing.find(sub => sub.subscription?.endpoint === subscription.endpoint);
 
                 if (!isExist) {
+                    console.log("[PUSH] Добавляем новую подписку в базу...");
                     await supabase.from('push_subscriptions').insert([{ 
                         user_id: currentUser.id, 
                         subscription: subscription 
                     }]);
+                } else {
+                    console.log("[PUSH] Подписка уже существует в базе, пропускаем.");
                 }
                 
                 window.customAlert("Успешно", "Push-уведомления включены!");
             } catch (err) {
-                console.error("Ошибка подписки:", err);
+                console.error("[PUSH] Ошибка подписки:", err);
             }
         };
 
         window.sendPushToServer = async (receiverId, text) => {
+            console.log(`[PUSH] Отправка запроса на /api/send для пользователя ${receiverId}...`);
             try {
-                await fetch('/api/send', {
+                const res = await fetch('/api/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -547,8 +555,10 @@
                         body: text 
                     })
                 });
+                const data = await res.json();
+                console.log("[PUSH] Ответ от сервера:", res.status, data);
             } catch (e) {
-                console.error("Не удалось отправить пуш на сервер:", e);
+                console.error("[PUSH] Не удалось отправить пуш на сервер:", e);
             }
         };
 
@@ -743,7 +753,6 @@
         };
 
         function setupPresence() {
-            // Подключаемся к системному каналу Firebase, который знает статус интернета
             const connectedRef = ref(db, ".info/connected");
             onValue(connectedRef, (snap) => {
                 if (snap.val() === true) {
@@ -1316,6 +1325,7 @@
         let mediaRecorder; 
         let audioChunks = [];
         let voiceTriggeredByTouch = false;
+        let globalAudioStream = null;
 
         window.startVoice = async (e) => {
             if (e && e.type === 'touchstart') voiceTriggeredByTouch = true;
@@ -1328,11 +1338,11 @@
             audioChunks = [];
             
             try {
-                // На iOS Safari лучше запрашивать поток каждый раз, чтобы он не "засыпал"
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // Всегда запрашиваем свежий стрим, чтобы iOS не отдавал пустой звук
+                globalAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 
-                // Оставляем формат по умолчанию (браузер сам выберет лучший поддерживаемый формат, на iOS это mp4)
-                mediaRecorder = new MediaRecorder(stream);
+                // Никаких принудительных форматов - пусть iOS Safari пишет в свой "родной"
+                mediaRecorder = new MediaRecorder(globalAudioStream);
                 
                 mediaRecorder.ondataavailable = ev => { if (ev.data.size > 0) audioChunks.push(ev.data); };
                 mediaRecorder.onstop = async () => {
@@ -1343,8 +1353,7 @@
                     document.getElementById('btn-mic').style.background = '#34c759'; 
                     document.getElementById('btn-attach').classList.remove('hidden');
                     
-                    // Освобождаем микрофон после записи
-                    stream.getTracks().forEach(t => t.stop());
+                    globalAudioStream.getTracks().forEach(t => t.stop());
                     
                     const duration = Date.now() - recordStartTime;
                     if (duration < 2000) {
@@ -1356,7 +1365,6 @@
                     isUploadingVoice = true;
                     document.getElementById('loader-overlay').classList.add('active');
 
-                    // Определяем расширение по реальному mimeType
                     const ext = mediaRecorder.mimeType.includes('mp4') ? 'mp4' : 'webm';
                     const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/mp4' });
                     const reader = new FileReader();
