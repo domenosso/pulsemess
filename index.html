@@ -10,7 +10,7 @@
     
     <title>Nano</title>
     <link rel="manifest" href="/manifest.json">
-    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">ф
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -544,7 +544,6 @@
         };
 
         window.sendPushToServer = async (receiverId, text) => {
-            console.log(`[PUSH] Отправка запроса на /api/send для пользователя ${receiverId}...`);
             try {
                 const res = await fetch('/api/send', {
                     method: 'POST',
@@ -555,10 +554,17 @@
                         body: text 
                     })
                 });
+                
+                // ЗАЩИТА: Если сервер упал (500), мы не пытаемся парсить JSON и не крашим фронтенд
+                if (!res.ok) {
+                    console.error("[PUSH] Ошибка сервера Vercel:", res.status);
+                    return;
+                }
+                
                 const data = await res.json();
-                console.log("[PUSH] Ответ от сервера:", res.status, data);
+                console.log("[PUSH] Успешно:", data);
             } catch (e) {
-                console.error("[PUSH] Не удалось отправить пуш на сервер:", e);
+                console.error("[PUSH] Сбой сети или API:", e);
             }
         };
 
