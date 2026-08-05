@@ -1,5 +1,5 @@
 self.addEventListener('install', (event) => {
-    self.skipWaiting(); // Принудительно обновляет старые воркеры на телефонах
+    self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -8,23 +8,29 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('push', (event) => {
     let pushTitle = 'Nano Messenger';
-    let pushBody = 'Новое сообщение';
+    let pushBody = 'У вас новое сообщение';
+    let urlToOpen = '/';
 
-    // Безопасный парсинг (не упадет, даже если пришел кривой формат)
-    try {
-        if (event.data) {
+    if (event.data) {
+        try {
             const data = event.data.json();
             pushTitle = data.title || pushTitle;
             pushBody = data.body || pushBody;
+            if (data.url) urlToOpen = data.url;
+        } catch (e) {
+            pushBody = event.data.text();
         }
-    } catch (e) {
-        if (event.data) pushBody = event.data.text();
     }
 
     const options = {
         body: pushBody,
-        vibrate: [200, 100, 200, 100, 200], // Длинная вибрация, чтобы точно заметить
-        requireInteraction: true // Пуш не исчезнет сам, пока на него не нажмут
+        icon: '/icon.png',
+        badge: '/icon.png',
+        vibrate: [200, 100, 200],
+        requireInteraction: true,
+        tag: 'nano-chat', // <--- ГЛАВНЫЙ ФИКС ДУБЛИКАТОВ! Схлопывает уведомления.
+        renotify: true,   // Звук и вибрация будут работать при обновлении плашки
+        data: { url: urlToOpen }
     };
 
     event.waitUntil(
@@ -34,5 +40,17 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    event.waitUntil(clients.openWindow('/'));
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+            for (let i = 0; i < windowClients.length; i++) {
+                const client = windowClients[i];
+                if (client.url.includes(self.registration.scope) && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow(event.notification.data.url);
+            }
+        })
+    );
 });
