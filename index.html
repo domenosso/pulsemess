@@ -410,6 +410,7 @@
         </main>
     </div>
 
+    <!-- Модалка просмотра файлов -->
     <div id="viewer-overlay" class="overlay" onclick="window.closeViewer()">
         <div class="viewer-content" onclick="event.stopPropagation()">
             <div style="width: 100%; display: flex; justify-content: flex-end; margin-bottom: -10px;">
@@ -504,6 +505,7 @@
             return outputArray;
         }
 
+        // --- УМНАЯ ПОДПИСКА (БЕЗ ДУБЛИКАТОВ) ---
         window.subscribeToPush = async () => {
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                 return window.customAlert("Ошибка", "Ваш браузер не поддерживает Push-уведомления.");
@@ -517,16 +519,20 @@
                     applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
                 });
 
-                const { data: existing } = await supabase.from('push_subscriptions').select('*').eq('user_id', currentUser.id);
-                const isExist = existing && existing.find(sub => sub.subscription?.endpoint === subscription.endpoint);
-
-                if (!isExist) {
-                    await supabase.from('push_subscriptions').insert([{ 
-                        user_id: currentUser.id, 
-                        subscription: JSON.parse(JSON.stringify(subscription)) 
-                    }]);
+                // ЖЕСТКАЯ ЗАЧИСТКА ВСЕХ СТАРЫХ КЛЮЧЕЙ ЭТОГО ПОЛЬЗОВАТЕЛЯ ИЗ БД
+                const { data: oldSubs } = await supabase.from('push_subscriptions').select('id').eq('user_id', currentUser.id);
+                if (oldSubs && oldSubs.length > 0) {
+                    const ids = oldSubs.map(s => s.id);
+                    await supabase.from('push_subscriptions').delete().in('id', ids);
                 }
+
+                // ДОБАВЛЕНИЕ ЕДИНСТВЕННОГО ЧИСТОГО КЛЮЧА
+                const { error } = await supabase.from('push_subscriptions').insert([{ 
+                    user_id: currentUser.id, 
+                    subscription: JSON.parse(JSON.stringify(subscription)) 
+                }]);
                 
+                if(error) throw error;
                 window.customAlert("Успешно", "Push-уведомления включены!");
             } catch (err) {
                 console.error("Ошибка подписки:", err);
@@ -535,7 +541,7 @@
 
         window.sendPushToServer = async (receiverId, text) => {
             try {
-                await fetch('/api/send', {
+                const res = await fetch('/api/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -544,8 +550,16 @@
                         body: text 
                     })
                 });
+
+                if (!res.ok) {
+                    console.error("[PUSH] Ошибка сервера Vercel:", res.status);
+                    return;
+                }
+                
+                const data = await res.json();
+                console.log("[PUSH] Успешно:", data);
             } catch (e) {
-                console.error("Не удалось отправить пуш на сервер:", e);
+                console.error("[PUSH] Сбой сети или API:", e);
             }
         };
 
@@ -1427,11 +1441,9 @@
             initTheme();
         };
 
-        // --- СБРОС ЦИФРЫ НА ИКОНКЕ ПРИ ОТКРЫТИИ ПРИЛОЖЕНИЯ ---
+        // ОЧИСТКА КРАСНОЙ НАКЛЕЙКИ
         window.addEventListener('focus', () => {
-            if (navigator.clearAppBadge) {
-                navigator.clearAppBadge().catch(e => console.log(e));
-            }
+            if (navigator.clearAppBadge) navigator.clearAppBadge().catch(e => console.log(e));
             if (navigator.serviceWorker && navigator.serviceWorker.controller) {
                 navigator.serviceWorker.controller.postMessage('clearBadge');
             }
