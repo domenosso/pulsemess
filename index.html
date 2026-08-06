@@ -410,7 +410,6 @@
         </main>
     </div>
 
-    <!-- Модалка просмотра файлов -->
     <div id="viewer-overlay" class="overlay" onclick="window.closeViewer()">
         <div class="viewer-content" onclick="event.stopPropagation()">
             <div style="width: 100%; display: flex; justify-content: flex-end; margin-bottom: -10px;">
@@ -519,7 +518,6 @@
                 });
 
                 const { data: existing } = await supabase.from('push_subscriptions').select('*').eq('user_id', currentUser.id);
-                
                 const isExist = existing && existing.find(sub => sub.subscription?.endpoint === subscription.endpoint);
 
                 if (!isExist) {
@@ -537,7 +535,7 @@
 
         window.sendPushToServer = async (receiverId, text) => {
             try {
-                const res = await fetch('/api/send', {
+                await fetch('/api/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -546,16 +544,8 @@
                         body: text 
                     })
                 });
-
-                if (!res.ok) {
-                    console.error("[PUSH] Ошибка сервера Vercel:", res.status);
-                    return;
-                }
-                
-                const data = await res.json();
-                console.log("[PUSH] Успешно:", data);
             } catch (e) {
-                console.error("[PUSH] Сбой сети или API:", e);
+                console.error("Не удалось отправить пуш на сервер:", e);
             }
         };
 
@@ -1335,9 +1325,7 @@
             audioChunks = [];
             
             try {
-                // Всегда запрашиваем свежий стрим, чтобы iOS не отдавал пустой звук
                 globalAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                
                 mediaRecorder = new MediaRecorder(globalAudioStream);
                 
                 mediaRecorder.ondataavailable = ev => { if (ev.data.size > 0) audioChunks.push(ev.data); };
@@ -1361,7 +1349,6 @@
                     isUploadingVoice = true;
                     document.getElementById('loader-overlay').classList.add('active');
 
-                    // Используем стандартный формат
                     const ext = mediaRecorder.mimeType.includes('mp4') ? 'mp4' : 'webm';
                     const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/mp4' });
                     const reader = new FileReader();
@@ -1439,6 +1426,16 @@
             localStorage.setItem('nano_theme', isDark ? 'light' : 'dark');
             initTheme();
         };
+
+        // --- СБРОС ЦИФРЫ НА ИКОНКЕ ПРИ ОТКРЫТИИ ПРИЛОЖЕНИЯ ---
+        window.addEventListener('focus', () => {
+            if (navigator.clearAppBadge) {
+                navigator.clearAppBadge().catch(e => console.log(e));
+            }
+            if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage('clearBadge');
+            }
+        });
     </script>
 </body>
 </html>
