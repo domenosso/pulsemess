@@ -7,8 +7,8 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('push', (event) => {
-    let pushTitle = 'Nano Messenger';
-    let pushBody = 'У вас новое сообщение';
+    let pushTitle = 'Nano';
+    let pushBody = 'Новое сообщение';
     let urlToOpen = '/';
 
     if (event.data) {
@@ -28,26 +28,14 @@ self.addEventListener('push', (event) => {
         badge: '/icon.png',
         vibrate: [200, 100, 200],
         requireInteraction: true,
-        tag: 'nano-chat-message', // Группирует дубликаты
+        tag: 'nano-chat-message',
         renotify: true,
         data: { url: urlToOpen }
     };
 
-    // Показываем системный пуш только если приложение СВЕРНУТО или ЗАКРЫТО
+    // Всегда показываем уведомление, чтобы браузер не дал теневой бан
     event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-            let isAppFocused = false;
-            for (let i = 0; i < windowClients.length; i++) {
-                if (windowClients[i].focused) {
-                    isAppFocused = true;
-                    break;
-                }
-            }
-            if (isAppFocused) {
-                return Promise.resolve(); // Не спамим, если юзер уже в чате
-            }
-            return self.registration.showNotification(pushTitle, options);
-        })
+        self.registration.showNotification(pushTitle, options)
     );
 });
 
