@@ -5,76 +5,60 @@ module.exports = async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
-        // Инициализируем внутри функции, чтобы ключи Vercel гарантированно загрузились
-        if (!process.env.VAPID_PUBLIC_KEY || !process.env.SUPABASE_URL) {
-            return res.status(500).json({ error: 'Env variables missing' });
+        // 1. ПРОВЕРКА КЛЮЧЕЙ
+        if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY || !process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+            return res.status(500).json({ error: 'Ключи окружения (Env Vars) не найдены в Vercel!' });
         }
 
+        // 2. ИНИЦИАЛИЗАЦИЯ
         webpush.setVapidDetails(
             'mailto:paveltuktin3@gmail.com',
             process.env.VAPID_PUBLIC_KEY,
             process.env.VAPID_PRIVATE_KEY
         );
-
         const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-
         const { receiverId, title, body } = req.body;
 
+        // 3. ПОЛУЧАЕМ ПОДПИСКИ ПОЛЬЗОВАТЕЛЯ
         const { data, error } = await supabase
             .from('push_subscriptions')
-            .select('id, subscription')
+            .select('*')
             .eq('user_id', receiverId);
 
-        if (error || !data || data.length === 0) {
-            return res.status(200).json({ status: 'no_subs' });
+        if (error) {
+            return res.status(500).json({ error: 'Ошибка БД Supabase', details: error.message });
+        }
+        if (!data || data.length === 0) {
+            return res.status(200).json({ status: 'no_subs_found' });
         }
 
-        const uniqueEndpoints = new Set();
-        const uniqueSubs = [];
-        const idsToDelete = [];
+        const payload = JSON.stringify({ title: title, body: body, url: '/' });
+        const pushOptions = { TTL: 86400, headers: { 'Urgency': 'high' } }; // 24 часа + высокий приоритет
 
-        // Убираем дубликаты устройств
-        for (const record of data) {
+        // 4. ОТПРАВЛЯЕМ ПУШИ
+        const pushPromises = data.map(async (record) => {
             let sub = record.subscription;
-            // Защита от криво сохраненных данных в Supabase
             if (typeof sub === 'string') {
                 try { sub = JSON.parse(sub); } catch(e) {}
             }
+            if (!sub || !sub.endpoint) return;
 
-            const endpoint = sub?.endpoint;
-            if (!endpoint) continue;
-
-            if (uniqueEndpoints.has(endpoint)) {
-                idsToDelete.push(record.id);
-            } else {
-                uniqueEndpoints.add(endpoint);
-                uniqueSubs.push({ id: record.id, subscription: sub });
-            }
-        }
-
-        // БЕЗОПАСНОЕ удаление мусора из базы (раньше тут крашился процесс)
-        if (idsToDelete.length > 0) {
-            await supabase.from('push_subscriptions').delete().in('id', idsToDelete).catch(e => console.log('Clean Error:', e));
-        }
-
-        const payload = JSON.stringify({ title, body, url: '/' });
-        const pushOptions = { TTL: 86400, headers: { 'Urgency': 'high' } };
-
-        const pushPromises = uniqueSubs.map(async (record) => {
             try {
-                await webpush.sendNotification(record.subscription, payload, pushOptions);
+                await webpush.sendNotification(sub, payload, pushOptions);
             } catch (e) {
+                // Если токен умер, удаляем его из базы
                 if (e.statusCode === 410 || e.statusCode === 404) {
-                    await supabase.from('push_subscriptions').delete().eq('id', record.id).catch(err => console.log(err));
+                    await supabase.from('push_subscriptions').delete().eq('id', record.id).catch(()=>{});
                 }
             }
         });
 
         await Promise.all(pushPromises);
-        return res.status(200).json({ success: true, sentTo: uniqueSubs.length });
+        return res.status(200).json({ success: true });
 
     } catch (err) {
+        // Перехват любой фатальной ошибки сервера
         console.error('Fatal API Error:', err);
-        return res.status(500).json({ error: 'Internal Server Error' });
+        return res.status(500).json({ error: 'Critical server error', msg: err.message });
     }
 };
