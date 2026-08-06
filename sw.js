@@ -28,29 +28,24 @@ self.addEventListener('push', (event) => {
         badge: '/icon.png',
         vibrate: [200, 100, 200],
         requireInteraction: true,
-        tag: 'nano-chat-message', // Группирует пуши в один, если их слишком много
+        tag: 'nano-chat-message', // Группирует дубликаты
         renotify: true,
         data: { url: urlToOpen }
     };
 
-    // 🚀 ГЛАВНЫЙ ФИКС: Проверяем, сидит ли юзер прямо сейчас в приложении
+    // Показываем системный пуш только если приложение СВЕРНУТО или ЗАКРЫТО
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
             let isAppFocused = false;
-            
             for (let i = 0; i < windowClients.length; i++) {
                 if (windowClients[i].focused) {
                     isAppFocused = true;
                     break;
                 }
             }
-
-            // Если вы с открытым экраном чата - НЕ показываем системный пуш (чтобы не дублировать)
             if (isAppFocused) {
-                return Promise.resolve();
+                return Promise.resolve(); // Не спамим, если юзер уже в чате
             }
-
-            // Если свернуто/закрыто - показываем!
             return self.registration.showNotification(pushTitle, options);
         })
     );
