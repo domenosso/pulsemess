@@ -10,7 +10,7 @@
     
     <title>Nano</title>
     <link rel="manifest" href="/manifest.json">
-    <link rel="icon" type="image/png" href="icon.png">ф
+    <link rel="icon" type="image/png" href="icon.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -506,7 +506,6 @@
         }
 
         window.subscribeToPush = async () => {
-            console.log("[PUSH] Начинаем процесс подписки...");
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                 return window.customAlert("Ошибка", "Ваш браузер не поддерживает Push-уведомления.");
             }
@@ -514,32 +513,25 @@
 
             try {
                 const register = await navigator.serviceWorker.register('/sw.js');
-                console.log("[PUSH] Service Worker зарегистрирован:", register);
-                
                 const subscription = await register.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
                 });
-                console.log("[PUSH] Подписка от браузера получена:", subscription);
 
-                console.log("[PUSH] Ищем существующие подписки в Supabase...");
                 const { data: existing } = await supabase.from('push_subscriptions').select('*').eq('user_id', currentUser.id);
                 
                 const isExist = existing && existing.find(sub => sub.subscription?.endpoint === subscription.endpoint);
 
                 if (!isExist) {
-                    console.log("[PUSH] Добавляем новую подписку в базу...");
                     await supabase.from('push_subscriptions').insert([{ 
                         user_id: currentUser.id, 
-                        subscription: subscription 
+                        subscription: JSON.parse(JSON.stringify(subscription)) 
                     }]);
-                } else {
-                    console.log("[PUSH] Подписка уже существует в базе, пропускаем.");
                 }
                 
                 window.customAlert("Успешно", "Push-уведомления включены!");
             } catch (err) {
-                console.error("[PUSH] Ошибка подписки:", err);
+                console.error("Ошибка подписки:", err);
             }
         };
 
@@ -554,8 +546,7 @@
                         body: text 
                     })
                 });
-                
-                // ЗАЩИТА: Если сервер упал (500), мы не пытаемся парсить JSON и не крашим фронтенд
+
                 if (!res.ok) {
                     console.error("[PUSH] Ошибка сервера Vercel:", res.status);
                     return;
@@ -1347,7 +1338,6 @@
                 // Всегда запрашиваем свежий стрим, чтобы iOS не отдавал пустой звук
                 globalAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 
-                // Никаких принудительных форматов - пусть iOS Safari пишет в свой "родной"
                 mediaRecorder = new MediaRecorder(globalAudioStream);
                 
                 mediaRecorder.ondataavailable = ev => { if (ev.data.size > 0) audioChunks.push(ev.data); };
@@ -1371,6 +1361,7 @@
                     isUploadingVoice = true;
                     document.getElementById('loader-overlay').classList.add('active');
 
+                    // Используем стандартный формат
                     const ext = mediaRecorder.mimeType.includes('mp4') ? 'mp4' : 'webm';
                     const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/mp4' });
                     const reader = new FileReader();
